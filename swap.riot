@@ -1,0 +1,560 @@
+<swap>
+  <div id="swap-form">
+    <div class="section">
+      <div class="direction-title">From</div>
+      <div class="input-container">
+        <label class="currency" onclick={ openInputSelector }>{ inputSymbol() }</label>
+        <input type="number" class="input-amount" value={ state.inputAmount } onkeyup={ updateInputAmount } placeholder="0">
+      </div>
+    </div>
+
+    <div class="section switch">
+      <img src="./switch.svg" onclick={ switchDirection }></img>
+    </div>
+
+    <div class="section">
+      <div class="direction-title">To</div>
+      <div class="input-container">
+        <label class="currency" onclick={ openOutputSelector }>{ outputSymbol() }</label>
+        <input type="number" disabled="disabled" class="output-amount" value={ outputAmount() } placeholder="0">
+      </div>
+    </div>
+
+    <div class="swap-button" onclick={ buttonAction }>{ buttonText() }</div>
+  </div>
+
+  <table id="swap-price" if={ canOutput() }>
+    <tr>
+      <td class="text-left">Price</td>
+      <td class="text-right">{ priceText() }</td>
+    </tr>
+    <tr>
+      <td class="text-left">Swap fee</td>
+      <td class="text-right">{ swapFeeText() }</td>
+    </tr>
+    <tr>
+      <td class="text-left">METRIC balance</td>
+      <td class="text-right">{ state.metricBalance }</td>
+    </tr>
+  </div>
+
+  <div id="token-selector" if={ state.showTokenSelector }>
+    <div class="bg" onclick={ closeTokenSelector }></div>
+    <div class="box">
+      <div class="wrapper">
+        <div class="close"><img src="./close.svg" onclick={ closeTokenSelector }></div>
+        <input type="text" placeholder="Search symbol or paste address" oninput={ filterTokenSearch }>
+      </div>
+      <div class="tokens">
+        <table>
+          <tr each={ token in state.visibleTokens.slice(0, 100) } onclick={ selectToken }>
+            <td class="img"><img src="{ token.iconUrl }"></td>
+            <td class="symbol">{ token.symbol }</td>
+            <td class="balance">{ token.balance }</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    export default {
+
+      config: {
+        defaultWSUrl: "wss://mainnet.infura.io/ws/v3/12522e5176814bfda74dd672929641a3",
+        oneSplitAddress: "0x50FDA034C0Ce7a8f7EFDAebDA7Aa7cA21CC1267e",
+        referralAddress: "0x52427b0035F494a21a0A4A1AbE04d679f789c821", // build deployer
+        metricAddress: "0xEfc1C73A3D8728Dc4Cf2A18ac5705FE93E5914AC",
+        swapFee: (3000000000000000).toString(),
+        erc20Abi: [ { "constant": true, "inputs": [], "name": "name", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "spender", "type": "address" }, { "name": "value", "type": "uint256" } ], "name": "approve", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "nominateNewOwner", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "totalSupply", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "from", "type": "address" }, { "name": "to", "type": "address" }, { "name": "value", "type": "uint256" } ], "name": "transferFrom", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "decimals", "outputs": [ { "name": "", "type": "uint8" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "nominatedOwner", "outputs": [ { "name": "", "type": "address" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "name": "owner", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "_target", "type": "address" } ], "name": "setTarget", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [], "name": "acceptOwnership", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "owner", "outputs": [ { "name": "", "type": "address" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "callData", "type": "bytes" }, { "name": "numTopics", "type": "uint256" }, { "name": "topic1", "type": "bytes32" }, { "name": "topic2", "type": "bytes32" }, { "name": "topic3", "type": "bytes32" }, { "name": "topic4", "type": "bytes32" } ], "name": "_emit", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "useDELEGATECALL", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "symbol", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "to", "type": "address" }, { "name": "value", "type": "uint256" } ], "name": "transfer", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "name": "value", "type": "bool" } ], "name": "setUseDELEGATECALL", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "target", "outputs": [ { "name": "", "type": "address" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "name": "owner", "type": "address" }, { "name": "spender", "type": "address" } ], "name": "allowance", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "inputs": [ { "name": "_owner", "type": "address" } ], "payable": false, "stateMutability": "nonpayable", "type": "constructor" }, { "payable": true, "stateMutability": "payable", "type": "fallback" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "from", "type": "address" }, { "indexed": true, "name": "to", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" } ], "name": "Transfer", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "owner", "type": "address" }, { "indexed": true, "name": "spender", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" } ], "name": "Approval", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": false, "name": "newTarget", "type": "address" } ], "name": "TargetUpdated", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": false, "name": "newOwner", "type": "address" } ], "name": "OwnerNominated", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": false, "name": "oldOwner", "type": "address" }, { "indexed": false, "name": "newOwner", "type": "address" } ], "name": "OwnerChanged", "type": "event" } ],
+        oneSplitAbi: [ { "constant": true, "inputs": [ { "internalType": "contract IERC20", "name": "fromToken", "type": "address" }, { "internalType": "contract IERC20", "name": "destToken", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "parts", "type": "uint256" }, { "internalType": "uint256", "name": "flags", "type": "uint256" } ], "name": "getExpectedReturn", "outputs": [ { "internalType": "uint256", "name": "returnAmount", "type": "uint256" }, { "internalType": "uint256[]", "name": "distribution", "type": "uint256[]" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "internalType": "contract IERC20", "name": "fromToken", "type": "address" }, { "internalType": "contract IERC20", "name": "destToken", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "minReturn", "type": "uint256" }, { "internalType": "uint256[]", "name": "distribution", "type": "uint256[]" }, { "internalType": "uint256", "name": "flags", "type": "uint256" }, { "internalType": "address", "name": "referral", "type": "address" }, { "internalType": "uint256", "name": "feePercent", "type": "uint256" } ], "name": "swapWithReferral", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "payable": true, "stateMutability": "payable", "type": "function" } ]
+      },
+
+      state: {
+        // balances: {
+        //   inputToken: 0,
+        //   outputToken: 0
+        // },
+        isApproved: true,
+        inputToken: {
+          symbol: "ETH",
+          address: "0x0000000000000000000000000000000000000000",
+          decimals: 18
+        },
+        outputToken: null,
+        showTokenSelector: false
+      },
+
+      onMounted(props, state) {
+        this.updatePriceAndReschedule()
+        this.initWeb3()
+        // this.loadURLHash()
+        this.updateMeticBalanceAndReschedule()
+      },
+
+      // loadURLHash() {
+      //   var hash = window.location.hash
+
+      //   if (hash) {
+      //     var params = hash.split("#")[1].split("/")
+
+      //     // Address
+      //     if (params[0] !== undefined && params[0].startsWith("0x")) {
+      //       this.selectTokenByAddress(params[0])
+      //     }
+      //   }
+      // },
+
+      // selectTokenByAddress(address, tokenDirection) {
+      //   var contract = this.getContract(this.config.erc20Abi, address)
+
+      //   contract.methods.symbol().call().then((symbol) => {
+      //     contract.methods.decimals().call().then((decimals) => {
+
+      //       var tokenData = {
+      //         symbol: symbol,
+      //         address: address,
+      //         decimals: decimals
+      //       }
+
+      //       if (tokenDirection == "in") {
+      //         this.update({ inputToken: tokenData })
+      //       } else {
+      //         this.update({ outputToken: tokenData })
+      //       }
+      //     })
+      //   })
+
+      //   // this.updateBalances()
+      // },
+
+      async loadTokenList(loadBalances) {
+        var res = await fetch("https://wispy-bird-88a7.uniswap.workers.dev/?url=http://tokens.1inch.eth.link", {
+          method: "GET"
+        })
+
+        var jsonRes = await res.json()
+        var tokens = Array.from(jsonRes.tokens)
+
+        tokens.push({
+          address: "0x6e36556b3ee5aa28def2a8ec3dae30ec2b208739",
+          decimals: 18,
+          symbol: "BUILD",
+          logoURI: "https://etherscan.io/token/images/build_32.png"
+        })
+
+        tokens.push({
+          address: "0xEfc1C73A3D8728Dc4Cf2A18ac5705FE93E5914AC",
+          decimals: 18,
+          symbol: "METRIC",
+          logoURI: "https://etherscan.io/images/main/empty-token.png"
+        })
+
+        var tokens = tokens.map(item => {
+          const container = {}
+
+          container.address = item.address
+          container.decimals = item.decimals
+          container.symbol = item.symbol
+          container.iconUrl = item.logoURI
+
+          if(loadBalances) {
+            var contract = this.getContract(this.config.erc20Abi, item.address)
+
+            contract.methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
+              balance = isNaN(balance) ? 0 : balance / (10**item.decimals)
+              container.balance = this.round(balance, 2)
+            })
+          } else {
+            container.balance = 0
+          }
+
+          return container
+        })
+
+        var eth = {
+          address: "0x0000000000000000000000000000000000000000",
+          symbol: "ETH",
+          decimals: 18,
+          iconUrl: "/eth.png"
+        }
+
+        if(loadBalances) {
+          ethBalance = await web3.eth.getBalance(this.state.defaultAddress)
+
+          ethBalance = isNaN(ethBalance) ? 0 : ethBalance / (10**18)
+          eth.balance = this.round(ethBalance, 2)
+        } else {
+          eth.balance = 0
+        }
+
+        tokens.push(eth)
+        this.update({ availableTokens: tokens, visibleTokens: tokens })
+      },
+
+      initWeb3() {
+        // Use wallet is it"s available
+        if (typeof ethereum !== "undefined") {
+         web3 = new Web3(ethereum)
+         this.connectWallet()
+
+         ethereum.on("accountsChanged", (accounts) => {
+           this.updateDefaultAddress()
+         })
+
+        // If not, use Infura
+        } else {
+          this.state.defaultAddress = "0x0000000000000000000000000000000000000000"
+          this.loadTokenList(false)
+          web3 = new Web3(new Web3.providers.WebsocketProvider(this.config.defaultWSUrl))
+        }
+      },
+
+      walletDisconnected() {
+        return (this.state.defaultAddress === undefined)
+      },
+
+      async connectWallet() {
+        if (window.ethereum !== undefined) {
+          await ethereum.enable().catch(error => {
+            console.error(error)
+          })
+
+          this.updateDefaultAddress()
+        }
+      },
+
+      openInputSelector() {
+        this.state.pendingTokenSelection = "input"
+        this.openTokenSelector()
+      },
+
+      openOutputSelector() {
+        this.state.pendingTokenSelection = "output"
+        this.openTokenSelector()
+      },
+
+      openTokenSelector() {
+        if (this.state.availableTokens !== undefined) {
+          this.update({ showTokenSelector: true });
+          this.update({ visibleTokens: this.sortTokens(this.state.availableTokens) })
+        }
+      },
+
+      closeTokenSelector() {
+        this.update({ showTokenSelector: false });
+      },
+
+      tokenBySymbol(symbol) {
+        return this.state.availableTokens.filter(function(x) {
+          return x.symbol.toLowerCase() === symbol.toLowerCase()
+        })[0]
+      },
+
+      selectToken(e) {
+        var symbol = e.target.parentElement.cells[1].textContent
+
+        var tokenData = {
+          symbol: symbol,
+          address: this.tokenBySymbol(symbol).address,
+          decimals: this.tokenBySymbol(symbol).decimals
+        }
+
+        if (this.state.pendingTokenSelection == "input") {
+          this.update({ inputToken: tokenData })
+        } else {
+          this.update({ outputToken: tokenData })
+        }
+
+        // this.updateBalances()
+        this.closeTokenSelector()
+        this.loadApproval()
+      },
+
+      sortTokens(tokens, value) {
+        return tokens.sort(function(a, b) {
+          if (a.balance > 0 || b.balance > 0) {
+            return b.balance - a.balance
+          } else if (value instanceof String) {
+            return a.symbol.toLowerCase().startsWith(value) ? -1 : 1
+          } else {
+            return a.symbol - b.symbol
+          }
+        })
+      },
+
+      updateMetricBalance() {
+        if (this.state.defaultAddress != undefined) {
+          this.erc20Contract(this.config.metricAddress).methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
+            var balance = isNaN(balance) ? 0 : this.round(balance / (10**18), 4)
+            this.update({ metricBalance: balance })
+          })
+        }
+      },
+
+      swapFeeText() {
+        if (this.state.metricBalance >= 100) {
+          return "No fees 🥳"
+        } else {
+          var feeAmount = this.round(this.state.inputAmount * 0.003, 4)
+          return `${feeAmount} ${this.state.inputToken.symbol}`
+        }
+      },
+
+      priceText() {
+        var inputSymbol = this.state.inputToken.symbol
+        var outputSymbol = this.state.outputToken.symbol
+        var rate = this.round(this.state.conversionRate, 4)
+        return `${rate} ${outputSymbol} / ${inputSymbol}`
+      },
+
+      filterTokenSearch(e) {
+        var value = this.$("#token-selector input").value.toLowerCase();
+
+        if (value) {
+          if (value.length > 40 && value.startsWith("0x")) {
+
+            var token = { address: value }
+            var contract = this.getContract(this.config.erc20Abi, value)
+
+            contract.methods.symbol().call().then((symbol) => {
+              token.symbol = symbol
+
+              contract.methods.decimals().call().then((decimals) => {
+                token.decimals = decimals
+
+                contract.methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
+                  balance = isNaN(balance) ? 0 : balance / (10**token.decimals)
+                  token.balance = this.round(balance, 2)
+
+                  this.state.availableTokens.push(token)
+                  this.update({ visibleTokens: [token] })
+                })
+              })
+            })
+
+          } else {
+            var tokens = this.sortTokens(this.state.availableTokens.filter(function(x) {
+              return x.symbol.toLowerCase().includes(value)
+            }), value)
+
+            this.update({ visibleTokens: this.sortTokens(tokens) })
+          }
+        } else {
+          this.update({ visibleTokens: this.sortTokens(this.state.availableTokens) })
+        }
+      },
+
+      updateDefaultAddress() {
+        web3.eth.getAccounts().then((accounts) => {
+          this.state.defaultAddress = accounts[0]
+          this.loadTokenList(true)
+          // this.updateBalancesAndReschedule()
+        })
+      },
+
+      erc20Contract(contractAddress) {
+        return this.getContract(this.config.erc20Abi, contractAddress)
+      },
+
+      oneSplitContract() {
+        return this.getContract(this.config.oneSplitAbi, this.config.oneSplitAddress)
+      },
+
+      getContract(abi, address) {
+        return new web3.eth.Contract(abi, address)
+      },
+
+      sendSwap() {
+        var inputWei = (this.state.inputAmount * (10**this.state.inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false })
+        var ethAmount = (this.state.inputToken.symbol == "ETH") ? inputWei : 0
+        var swapFee = this.state.metricBalance >= 100 ? 0 : this.config.swapFee
+
+        this.oneSplitContract().methods.swapWithReferral(
+          this.state.inputToken.address,
+          this.state.outputToken.address,
+          inputWei,
+          0,
+          this.state.swapDistribution,
+          0,
+          this.config.referralAddress,
+          swapFee
+        ).send({ from: this.state.defaultAddress, value: ethAmount })
+      },
+
+      // updateBalances() {
+      //   var that = this
+      //   if (this.state.selectedToken !== undefined) {
+      //     this.synthContract().methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
+
+      //       var walletSynth = isNaN(balance) ? 0 : balance / this.round((10**this.state.selectedToken.decimals), 2)
+      //       web3.eth.getBalance(this.state.defaultAddress).then(function(walletEth) {
+      //         var contractEth = 100 // TODO
+      //         var contractSynth = 100
+
+      //         that.update({
+      //           balances: {
+      //             wallet: {
+      //               eth: walletEth / 10**18,
+      //               synth: walletSynth
+      //             },
+      //             contract: {
+      //               eth: contractEth,
+      //               synth: contractSynth
+      //             }
+      //           }
+      //         })
+      //       })
+      //     })
+      //   }
+      // },
+
+      updatePriceAndReschedule() {
+        this.updatePrice()
+        let that = this
+
+        setTimeout(function () {
+          that.updatePriceAndReschedule()
+        }, 1000)
+      },
+
+      updateMeticBalanceAndReschedule() {
+        this.updateMetricBalance()
+        let that = this
+
+        setTimeout(function () {
+          that.updateMeticBalanceAndReschedule()
+        }, 5000)
+      },
+
+      // updateBalancesAndReschedule() {
+      //   let that = this
+      //   that.updateBalances()
+
+      //   setTimeout(function () {
+      //     that.updateBalancesAndReschedule()
+      //   }, 60000)
+      // },
+
+      updatePrice() {
+        if(this.canOutput()) {
+
+          var inputToken = this.state.inputToken
+          var outputToken = this.state.outputToken
+          var that = this
+
+          this.oneSplitContract().methods.getExpectedReturn(
+            inputToken.address,
+            outputToken.address,
+            (this.state.inputAmount * (10**inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false }),
+            "4",
+            "0"
+          ).call().then((result) => {
+            var outputAmount = isNaN(result[0]) ? 0 : parseInt(result[0]) / (10**outputToken.decimals)
+            var conversionRate = outputAmount / that.state.inputAmount
+
+            that.update({
+              conversionRate: conversionRate,
+              swapDistribution: result[1]
+            })
+          })
+        }
+      },
+
+      updateInputAmount(e) {
+        let newInput = parseFloat(e.target.value)
+        newInput = isNaN(newInput) ? 0 : newInput
+        this.update({inputAmount: newInput})
+      },
+
+      canOutput() {
+        return (this.state.outputToken != undefined && this.state.inputAmount > 0)
+      },
+
+      outputAmount() {
+        if(this.canOutput()) {
+          return this.round(this.state.inputAmount * this.state.conversionRate, 4)
+        } else {
+          return null
+        }
+      },
+
+      round(num, decimals) {
+        return +(Math.round(num + `e+${decimals}`) + `e-${decimals}`)
+      },
+
+      inputSymbol() {
+        return this.state.inputToken ? this.state.inputToken.symbol : "SELECT TOKEN ˅"
+      },
+
+      outputSymbol() {
+        return this.state.outputToken ? this.state.outputToken.symbol : "SELECT TOKEN ˅"
+      },
+
+      loadApproval() {
+        if (this.state.inputToken !== undefined) {
+          if (this.state.inputToken.symbol !== "ETH") {
+            this.erc20Contract(this.state.inputToken.address).methods.allowance(this.state.defaultAddress, this.config.oneSplitAddress).call().then((allowance) => {
+              var approved = (allowance > 1000000000000000000000000000)
+              this.update({ isApproved: approved })
+            })
+          } else {
+            this.update({ isApproved: true })
+          }
+        }
+
+        var that = this
+        setTimeout(function () {
+          that.loadApproval()
+        }, 3000)
+      },
+
+      buttonText() {
+        if (this.walletDisconnected()) {
+          return "CONNECT WALLET"
+        }
+
+        if (this.state.inputToken == null || this.state.outputToken == null) {
+          return "SELECT TOKEN"
+        }
+
+        if (this.state.isApproved) {
+          return "SWAP"
+        }
+
+        return "APPROVE"
+      },
+
+      sendApproveToken() {
+        this.erc20Contract(this.state.inputToken.address).methods.approve(this.config.oneSplitAddress, web3.utils.toBN("10000000000000000000000000000")).send({ from: this.state.defaultAddress })
+      },
+
+      buttonAction() {
+        if (this.walletDisconnected()) {
+          this.connectWallet()
+        } else {
+          if (!this.state.isApproved) {
+            this.sendApproveToken()
+          }
+
+          else if (this.state.inputToken && this.state.outputToken) {
+            this.sendSwap()
+          }
+        }
+      },
+
+      switchDirection() {
+        var inputToken = this.state.inputToken
+        var outputToken = this.state.outputToken
+
+        this.update({
+          inputToken: outputToken,
+          outputToken: inputToken,
+          inputAmount: this.outputAmount()
+        })
+
+        this.loadApproval()
+      }
+    }
+  </script>
+</swap>
