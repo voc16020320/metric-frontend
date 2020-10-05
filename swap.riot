@@ -1,7 +1,10 @@
 <swap>
   <div id="swap-form">
     <div class="section">
-      <div class="direction-title">From</div>
+      <div class="direction-title">
+        <div>From</div>
+        <div onclick={ balanceClickInputAmount }>Balance: {state.inputToken.balance}</div>
+      </div>
       <div class="input-container">
         <label class="currency" onclick={ openInputSelector }>{ inputSymbol() }</label>
         <input type="number" class="input-amount" value={ state.inputAmount } onkeyup={ updateInputAmount } placeholder="0">
@@ -13,7 +16,10 @@
     </div>
 
     <div class="section">
-      <div class="direction-title">To</div>
+    <div class="direction-title">
+        <div>To</div>
+        <div if= { isOutputDefined() }>Balance: {state.outputToken.balance}</div>
+      </div>
       <div class="input-container">
         <label class="currency" onclick={ openOutputSelector }>{ outputSymbol() }</label>
         <input type="number" disabled="disabled" class="output-amount" value={ outputAmount() } placeholder="0">
@@ -79,7 +85,8 @@
         inputToken: {
           symbol: "ETH",
           address: "0x0000000000000000000000000000000000000000",
-          decimals: 18
+          decimals: 18,
+          balance : 0
         },
         outputToken: null,
         showTokenSelector: false
@@ -189,7 +196,7 @@
         }
 
         tokens.push(eth)
-        this.update({ availableTokens: tokens, visibleTokens: tokens })
+        this.update({ availableTokens: tokens, visibleTokens: tokens, inputToken: eth })
       },
 
       initWeb3() {
@@ -257,7 +264,8 @@
         var tokenData = {
           symbol: symbol,
           address: this.tokenBySymbol(symbol).address,
-          decimals: this.tokenBySymbol(symbol).decimals
+          decimals: this.tokenBySymbol(symbol).decimals,
+          balance: this.tokenBySymbol(symbol).balance
         }
 
         if (this.state.pendingTokenSelection == "input") {
@@ -462,9 +470,21 @@
       },
 
       updateInputAmount(e) {
-        let newInput = parseFloat(e.target.value)
+        inputAmountParse(e.target.value)
+      },
+
+      balanceClickInputAmount(){
+        this.inputAmountParse(this.state.inputToken.balance)
+      },
+
+      inputAmountParse(val){
+        let newInput = parseFloat(val)
         newInput = isNaN(newInput) ? 0 : newInput
         this.update({inputAmount: newInput})
+      },
+
+      isOutputDefined() {
+        return (this.state.outputToken != undefined)
       },
 
       canOutput() {
