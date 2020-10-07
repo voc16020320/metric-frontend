@@ -1,0 +1,40 @@
+<settings>
+
+    <div class="dropdown" onclick={ toggleDropDown } >
+        <div class="dropdown-logo" id="settings-icon">
+            <img src="settings.svg">
+        </div>
+    </div>
+
+    <div style={ isClicked() ? "display:block" : 'display:none'} >
+        <div class="dropdown-content" id="settings-dropdown">
+            <theme-switch></theme-switch>
+        </div>
+    </div>
+
+    <script>
+        export default {
+            state: {
+                dropDownClicked: false
+            },
+            onMounted() {
+                document.addEventListener('click', function (e) {
+                    var dropdown = document.getElementById('settings-dropdown');
+                    var icon = document.getElementById('settings-icon');
+
+                    if (!icon.contains(e.target) && !dropdown.contains(e.target) && this.isClicked()) {
+                        this.toggleDropDown();
+                    }
+                }.bind(this));
+            },
+            isClicked() {
+                return this.state.dropDownClicked
+            },
+            toggleDropDown() {
+                this.state.dropDownClicked = !this.state.dropDownClicked
+                this.update()
+            }
+        }
+    </script>
+
+</settings>

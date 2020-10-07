@@ -1,0 +1,55 @@
+<theme-switch>
+    <div class="theme-switch-line">Dark mode</div>
+    <div class="theme-switch-line">
+        <div class="theme-switch-line-group">
+            <a href="#" class={ isDarkThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ setDarkTheme }>
+                On
+            </a>
+            <a href="#" class={ isLightThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ setLightTheme }>
+                Off
+            </a>
+        </div>
+    </div>
+    <script>
+        export default {
+            state: {},
+            onMounted() {
+                if (this.isThemeAlreadySet()) {
+                    this.setTheme(this.getTheme())
+                } else {
+                    this.setDarkTheme()
+                }
+
+            },
+            setDarkTheme() {
+                this.setTheme(this.darkTheme())
+            },
+            setLightTheme() {
+                this.setTheme(this.lightTheme())
+            },
+            setTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                this.update();
+            },
+            getTheme() {
+                return localStorage.getItem('theme')
+            },
+            isDarkThemeSet() {
+                return this.getTheme() === this.darkTheme()
+            },
+            isLightThemeSet() {
+                return this.getTheme() === this.lightTheme()
+            },
+            darkTheme() {
+                return 'dark'
+            },
+            lightTheme() {
+                return 'light'
+            },
+            isThemeAlreadySet() {
+                return (this.getTheme() !== null)
+            }
+        }
+    </script>
+</theme-switch>
