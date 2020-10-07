@@ -8,6 +8,7 @@
       <div class="input-container">
         <label class="currency" onclick={ openInputSelector }>{ inputSymbol() }</label>
         <input type="number" class="input-amount" value={ state.inputAmount } onkeyup={ updateInputAmount } placeholder="0">
+        <div class="direction-title usd-price">{state.inputTokenUsd}</div>
       </div>
     </div>
 
@@ -23,6 +24,7 @@
       <div class="input-container">
         <label class="currency" onclick={ openOutputSelector }>{ outputSymbol() }</label>
         <input type="number" disabled="disabled" class="output-amount" value={ outputAmount() } placeholder="0">
+        <div class="direction-title usd-price">{state.outputTokenUsd}</div>
       </div>
     </div>
 
@@ -88,6 +90,8 @@
           decimals: 18,
           balance : 0
         },
+        inputUsd: null,
+        outputUsd: null,
         outputToken: null,
         showTokenSelector: false
       },
@@ -258,7 +262,7 @@
         })[0]
       },
 
-      selectToken(e) {
+      async selectToken(e) {
         var symbol = e.target.parentElement.cells[1].textContent
 
         var tokenData = {
@@ -269,9 +273,10 @@
         }
 
         if (this.state.pendingTokenSelection == "input") {
-          this.update({ inputToken: tokenData })
+          this.update({ inputToken: tokenData, inputUsd: null })
+          await this.inputAmountParse(this.state.inputAmount)
         } else {
-          this.update({ outputToken: tokenData })
+          this.update({ outputToken: tokenData, outputUsd: null })
         }
 
         // this.updateBalances()
@@ -457,30 +462,80 @@
             (this.state.inputAmount * (10**inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false }),
             "4",
             "0"
-          ).call().then((result) => {
+          ).call().then(async (result) => {
             var outputAmount = isNaN(result[0]) ? 0 : parseInt(result[0]) / (10**outputToken.decimals)
             var conversionRate = outputAmount / that.state.inputAmount
-
+            var outputusd = ""
+            if (this.canOutput()){
+              if (this.state.outputUsd === null){
+                this.state.outputUsd = await this.getTokenUsdPrice(this.state.outputToken)
+              }
+              var total = this.state.outputUsd * outputAmount;
+              if (total > 0){
+                outputusd = `≈ $${this.round(this.state.outputUsd * outputAmount, 2)}`
+              }
+            }
             that.update({
               conversionRate: conversionRate,
+              outputTokenUsd: outputusd,
               swapDistribution: result[1]
             })
+          })
+        }
+        else{
+          this.update({
+              outputTokenUsd: "",
+              outputUsd: null
           })
         }
       },
 
       updateInputAmount(e) {
-        inputAmountParse(e.target.value)
+        this.inputAmountParse(e.target.value)
       },
 
       balanceClickInputAmount(){
         this.inputAmountParse(this.state.inputToken.balance)
       },
 
-      inputAmountParse(val){
-        let newInput = parseFloat(val)
+      async inputAmountParse(val){
+        let newInput = isNaN(val) ? 0 : parseFloat(val)
         newInput = isNaN(newInput) ? 0 : newInput
-        this.update({inputAmount: newInput})
+        var inputusd = ''
+        if (this.state.inputUsd === null)
+        {
+          var usd = await this.getTokenUsdPrice(this.state.inputToken)
+          this.state.inputUsd = usd;
+        }
+
+        if (this.state.inputUsd * newInput > 0){
+            inputusd = `≈ $${this.round(this.state.inputUsd * newInput, 2)}`
+          }
+
+        this.update({inputAmount: newInput, inputTokenUsd: inputusd})
+      },
+
+      async getTokenUsdPrice(token) {
+        var apiurl=""
+        if (token.symbol.toLowerCase() === 'eth'){
+          apiurl ="https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false"
+        }
+        else{
+          apiurl = `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${token.address}&vs_currencies=usd`
+        }
+        var res = await fetch(apiurl, {
+          method: "GET"
+        })
+
+        var jsonRes = await res.json()
+
+        if (token.symbol.toLowerCase() === 'eth'){
+          return jsonRes["ethereum"].usd
+        }
+        if (typeof jsonRes[`${token.address.toLowerCase()}`] === 'undefined'){
+          return 0
+        }
+        return jsonRes[`${token.address.toLowerCase()}`].usd
       },
 
       isOutputDefined() {
@@ -563,15 +618,19 @@
         }
       },
 
-      switchDirection() {
+      async switchDirection() {
         var inputToken = this.state.inputToken
         var outputToken = this.state.outputToken
 
         this.update({
           inputToken: outputToken,
           outputToken: inputToken,
-          inputAmount: this.outputAmount()
+          inputAmount: this.outputAmount(),
+          inputUsd : null,
+          outputUsd: null
         })
+
+        this.inputAmountParse(this.state.inputAmount)
 
         this.loadApproval()
       }

@@ -140,6 +140,10 @@ input::-webkit-inner-spin-button {
   justify-content: space-between;
 }
 
+.usd-price {
+  margin-top: 10px;
+}
+
 .header {
   width: 100%;
   display: flex;
