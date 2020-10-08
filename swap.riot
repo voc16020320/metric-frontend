@@ -3,7 +3,7 @@
     <div class="section">
       <div class="direction-title">
         <div>From</div>
-        <div onclick={ balanceClickInputAmount }>Balance: {state.inputToken.balance}</div>
+        <div onclick={ balanceClickInputAmount } if={state.inputToken !== null && state.inputToken.balance > 0}>Balance: {state.inputToken.balance}</div>
       </div>
       <div class="input-container">
         <label class="currency" onclick={ openInputSelector }>{ inputSymbol() }</label>
@@ -97,6 +97,7 @@
       },
 
       onMounted(props, state) {
+        document.title = "Metric Exchange"
         this.updatePriceAndReschedule()
         this.initWeb3()
         // this.loadURLHash()
@@ -297,7 +298,7 @@
       },
 
       updateMetricBalance() {
-        if (this.state.defaultAddress != undefined) {
+        if (this.state.defaultAddress != undefined && this.inputToken !== null) {
           this.erc20Contract(this.config.metricAddress).methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
             var balance = isNaN(balance) ? 0 : this.round(balance / (10**18), 4)
             this.update({ metricBalance: balance })
@@ -516,6 +517,9 @@
       },
 
       async getTokenUsdPrice(token) {
+        if (token === null){
+          return 0
+        }
         var apiurl=""
         if (token.symbol.toLowerCase() === 'eth'){
           apiurl ="https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false"
@@ -567,7 +571,7 @@
       },
 
       loadApproval() {
-        if (this.state.inputToken !== undefined) {
+        if (this.state.inputToken !== undefined && this.state.inputToken !== null) {
           if (this.state.inputToken.symbol !== "ETH") {
             this.erc20Contract(this.state.inputToken.address).methods.allowance(this.state.defaultAddress, this.config.oneSplitAddress).call().then((allowance) => {
               var approved = (allowance > 1000000000000000000000000000)
