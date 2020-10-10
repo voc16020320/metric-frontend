@@ -44,7 +44,7 @@
       <td class="text-left">METRIC balance</td>
       <td class="text-right">{ state.metricBalance }</td>
     </tr>
-  </div>
+  </table>
 
   <div id="token-selector" if={ state.showTokenSelector }>
     <div class="bg" onclick={ closeTokenSelector }></div>
@@ -162,7 +162,7 @@
           logoURI: "https://etherscan.io/images/main/empty-token.png"
         })
 
-        var tokens = tokens.map(item => {
+        tokens = tokens.map(item => {
           const container = {}
 
           container.address = item.address
@@ -192,7 +192,7 @@
         }
 
         if(loadBalances) {
-          ethBalance = await web3.eth.getBalance(this.state.defaultAddress)
+          var ethBalance = await web3.eth.getBalance(this.state.defaultAddress)
 
           ethBalance = isNaN(ethBalance) ? 0 : ethBalance / (10**18)
           eth.balance = this.round(ethBalance, 2)
@@ -205,13 +205,14 @@
       },
 
       initWeb3() {
-        // Use wallet is it"s available
+        // Use wallet if available
         if (typeof ethereum !== "undefined") {
          web3 = new Web3(ethereum)
-         this.connectWallet()
+         this.connectWallet();
+         console.log('connected wallet');
 
          ethereum.on("accountsChanged", (accounts) => {
-           this.updateDefaultAddress()
+           this.updateDefaultAddress(accounts)
          })
 
         // If not, use Infura
@@ -273,7 +274,7 @@
           balance: this.tokenBySymbol(symbol).balance
         }
 
-        if (this.state.pendingTokenSelection == "input") {
+        if (this.state.pendingTokenSelection === "input") {
           this.update({ inputToken: tokenData, inputUsd: null })
           await this.inputAmountParse(this.state.inputAmount)
         } else {
@@ -298,7 +299,7 @@
       },
 
       updateMetricBalance() {
-        if (this.state.defaultAddress != undefined && this.inputToken !== null) {
+        if (this.state.defaultAddress !== undefined && this.inputToken !== null) {
           this.erc20Contract(this.config.metricAddress).methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
             var balance = isNaN(balance) ? 0 : this.round(balance / (10**18), 4)
             this.update({ metricBalance: balance })
@@ -381,7 +382,7 @@
 
       sendSwap() {
         var inputWei = (this.state.inputAmount * (10**this.state.inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false })
-        var ethAmount = (this.state.inputToken.symbol == "ETH") ? inputWei : 0
+        var ethAmount = (this.state.inputToken.symbol === "ETH") ? inputWei : 0
         var swapFee = this.state.metricBalance >= 100 ? 0 : this.config.swapFee
 
         this.oneSplitContract().methods.swapWithReferral(
@@ -547,7 +548,7 @@
       },
 
       canOutput() {
-        return (this.state.outputToken != undefined && this.state.inputAmount > 0)
+        return (this.state.outputToken !== undefined && this.state.inputAmount > 0)
       },
 
       outputAmount() {

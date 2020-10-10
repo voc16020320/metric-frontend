@@ -96,12 +96,12 @@ input::-webkit-inner-spin-button {
 #swap-form {
   margin: 0 auto;
   margin-top: 150px;
+  border-radius: 5px;
   width: 340px;
   padding: 30px;
   background: var(--swap-form-background-color);
   border: 1px solid var(--swap-from-border-color);
   box-shadow: 0 1px 5px 1px rgba(0, 0, 0, 0.05);
-  border-radius: 10px;
 }
 
 #swap-form .section {
@@ -111,7 +111,7 @@ input::-webkit-inner-spin-button {
 .swap-button {
   margin-top: 30px;
   background: var(--swap-button-background-color);
-  border-radius: 3px;
+  border-radius: 4px;
   color: var(--swap-button-text-color);
   text-align: center;
   padding: 9px;
@@ -263,7 +263,7 @@ input[type=number], #token-selector input[type=text] {
   width: 400px;
   height: 620px;
   background: var(--token-selector-box-background-color);
-  border-radius: 10px;
+  border-radius: 5px;
   border: 1px solid var(--token-selector-box-border-color);
   color: var(--token-selector-box-text-color)  ;
 }
@@ -337,3 +337,33 @@ input[type=number], #token-selector input[type=text] {
   right: 0;
   top: 0;
 }
+
+blocky {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  border: none;
+  outline: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+blocky #address {
+  vertical-align: center;
+  cursor: pointer;
+  color: var(--main-text-color);
+  font-style: normal;
+}
+
+blocky #wallet-connect {
+  vertical-align: center;
+  cursor: pointer;
+  color: var(--main-text-color);
+  font-style: normal;
+}
+
+blocky #identicon {
+  margin-right: 10px;
+  border-radius: 5px;
+}
+
+

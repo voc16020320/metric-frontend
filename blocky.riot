@@ -1,0 +1,87 @@
+<blocky>
+
+    <div id="identicon" style={ isWalletConnected() ? 'display:block' : 'display:none' } ></div>
+    <a href="https://etherscan.io/address/{ state.currentAccount }" target="_blank" style={ isWalletConnected() ? 'display:block' : 'display:none' }>
+        <span id="address">{ state.obfuscatedAccount }</span>
+    </a>
+    <div id="wallet-connect" style={ isWalletConnected() ? 'display:none' : 'display:block' } onclick={ connectAccount }>Connect wallet</div>
+
+    <script>
+        let blocky;
+
+        export default {
+
+            state: {
+                obfuscatedAccount: null
+            },
+
+            isWalletConnected() {
+                return this.state.obfuscatedAccount !== null
+            },
+
+            onMounted(props, state) {
+                this.connectAccount();
+                ethereum.on("accountsChanged", (accounts) => {
+                    this.handleAccounts(accounts)
+                });
+
+            },
+
+            connectAccount() {
+                ethereum
+                    .request({ method: 'eth_requestAccounts' })
+                    .then(this.handleAccounts)
+                    .catch((err) => {
+                        if (err.code === 4001) {
+                            // EIP-1193 userRejectedRequest error
+                            // If this happens, the user rejected the connection request.
+                            console.log('Please connect to MetaMask.');
+                        } else {
+                            console.error(err);
+                        }
+                    });
+            },
+
+            handleAccounts(accounts) {
+
+                if(!!blocky) {
+                    this.removeBlocky();
+                }
+
+                if (accounts.length !== 0) {
+                    this.state.currentAccount = accounts[0];
+                    this.state.obfuscatedAccount = this.state.currentAccount.substr(0, 8) + '...' + this.state.currentAccount.substr(38, 40);
+
+                    // Doesn't match light theme so removed for now
+                    // this.initBlocky();
+                }
+
+                this.update();
+            },
+
+            initBlocky() {
+                blocky = blockies.create({ // All options are optional
+                    seed: this.state.currentAccount, // seed used to generate icon data, default: random
+                    color: '#60FFD9', // to manually specify the icon color, default: random
+                    bgcolor: '#1A1A1A', // choose a different background color, default: random
+                    size: 8, // width/height of the icon in blocks, default: 8
+                    scale: 2, // width/height of each block in pixels, default: 4
+                    spotcolor: '#000' // each pixel has a 13% chance of being of a third color,
+                    // default: random. Set to -1 to disable it. These "spots" create structures
+                    // that look like eyes, mouths and noses.
+                });
+
+                document.getElementById("identicon").appendChild(blocky);
+
+            },
+
+            removeBlocky() {
+                document.getElementById("identicon").removeChild(blocky);
+
+                blocky = null;
+                this.state.obfuscatedAccount = null;
+                this.state.currentAccount = null;
+            }
+        }
+    </script>
+</blocky>
