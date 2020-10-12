@@ -15,7 +15,7 @@
   --token-selector-border-color: #2D2D2D;
   --token-selector-bg-background: #151515;
   --token-selector-table-hover-background-color: #2E2E2E;
-  --token-delector-table-text-color: #A3A3A3;
+  --token-selector-table-text-color: #A3A3A3;
   --token-selector-box-background-color: #1C1C1C;
   --token-selector-box-border-color: #337263;
   --token-selector-box-text-color: #151515  ;
@@ -51,7 +51,7 @@
   --token-selector-border-color: #EDEDED;
   --token-selector-bg-background: #FFFFFF;
   --token-selector-table-hover-background-color: #EDEDED;
-  --token-delector-table-text-color: #A3A3A3;
+  --token-selector-table-text-color: #A3A3A3;
   --token-selector-box-background-color: #FFFFFF;
   --token-selector-box-border-color: #ECECEC;
   --token-selector-box-text-color: #999999  ;
@@ -76,6 +76,19 @@ html, body {
   font-size: 14px;
 }
 
+/* scroll bar styling */
+
+::-webkit-scrollbar {
+  background: var(--main-background-color);
+  width: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: var(--token-selector-border-color);
+  -webkit-box-shadow: inset 0 0 2px var(--token-selector-border-color);
+}
+
 .brand-logo {
   background-image: var(--brand-logo);
   background-repeat: no-repeat;
@@ -95,7 +108,7 @@ input::-webkit-inner-spin-button {
 
 #swap-form {
   margin: 0 auto;
-  margin-top: 150px;
+  margin-top: 70px;
   border-radius: 5px;
   width: 340px;
   padding: 30px;
@@ -106,6 +119,24 @@ input::-webkit-inner-spin-button {
 
 #swap-form .section {
   margin-bottom: 20px;
+}
+
+#swap-form .section .trade-options {
+  display: grid;
+  grid-auto-flow: column;
+  text-align: center;
+  margin-left: 50px;
+  margin-right: 50px;
+  color: var(--token-selector-table-text-color);
+}
+
+#swap-form .section .trade-options .trade-option-button {
+  cursor: pointer;
+}
+
+#swap-form .section .trade-options .trade-option-active-button {
+  cursor: pointer;
+  color: var(--main-text-color);
 }
 
 .swap-button {
@@ -151,24 +182,17 @@ input::-webkit-inner-spin-button {
   flex-wrap: wrap;
 }
 
-@media (max-width: 768px) {
-  .header-item-2 {
-    position: relative;
-    width: 100%;
-  }
-}
-
-.header-item-1 {
+.header-logo {
   width: 33.3%;
   margin-left: 30px;
   margin-top: 25px;
 }
 
-.header-item-2 {
+.header-links {
   width: 33.3%;
 }
 
-.header-item-3 {
+.header-settings {
   right: 60px;
   top: 30px;
   text-align: right;
@@ -238,6 +262,56 @@ input[type=number], #token-selector input[type=text] {
   line-height: 25px;
 }
 
+#order-book {
+  display: grid;
+  align-items: center;
+  margin-top: 20px;
+  text-align: center;
+  justify-items: center;
+}
+
+#order-book-title {
+  font-family: "Inter", monospace;
+  font-size: 14px;
+  line-height: 32px;
+}
+
+#order-table-canvas {
+  height: 340px;
+  overflow-y: scroll;
+}
+
+.orders {
+  width: 450px;
+  font-size: 14px;
+  text-align: center;
+  line-height: 25px;
+}
+
+#orders-separator {
+  width: 450px;
+  height: 4px;
+  border: 3px solid var(--token-selector-border-color);
+}
+
+.bid {
+  color: #3FCCB0;
+}
+
+.ask {
+  color: #CC3F3F;
+}
+
+.orders thead th {
+  position: sticky;
+  top: 0;
+  font-size: 13px;
+  text-align: center;
+  line-height: 40px;
+  color: var(--token-selector-table-text-color);
+  background: var(--main-background-color);
+}
+
 .text-left {
   text-align: left;
 }
@@ -298,7 +372,7 @@ input[type=number], #token-selector input[type=text] {
 }
 
 #token-selector table {
-  color: var(--token-delector-table-text-color);
+  color: var(--token-selector-table-text-color);
   border-collapse: collapse;
   font-size: 14px;
   margin-top: 30px;

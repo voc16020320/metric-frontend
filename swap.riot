@@ -1,5 +1,12 @@
 <swap>
   <div id="swap-form">
+    <div class="section" if={ isOrderBookFeatureEnabled() }>
+      <div class="trade-options">
+        <div class={ state.isLimitOrder ? "trade-option-button" :  "trade-option-active-button" } onclick={ switchToQuickSwap }>Quick Swap</div>
+        <div>/</div>
+        <div class={ state.isLimitOrder ? "trade-option-active-button" :  "trade-option-button" } onclick={ switchToLimitOrder }>Limit orders</div>
+      </div>
+    </div>
     <div class="section">
       <div class="direction-title">
         <div>From</div>
@@ -46,6 +53,34 @@
     </tr>
   </table>
 
+  <div id="order-book" if={ state.isLimitOrder && state.outputToken !== null && state.inputToken !== null }>
+    <div id="order-book-title">ORDER BOOK</div>
+    <div id="order-table-canvas">
+    <table class="orders">
+      <thead class="order-book-columns" id="order-book-header">
+      <tr>
+        <th>Price { state.outputToken.symbol }</th>
+        <th>Amount { state.inputToken.symbol }</th>
+        <th>Total { state.outputToken.symbol }</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr each="{ask in state.asks}" class="ask">
+        <td>{ ask.price.toFixed(3) }</td>
+        <td>{ ask.volumeTaker.toFixed(3) }</td>
+        <td>{ ask.volumeMaker.toFixed(3) }</td>
+      </tr>
+      <tr id="orders-separator"><td></td></tr>
+      <tr each="{bid in state.bids}" class="bid">
+        <td>{ bid.price.toFixed(3) }</td>
+        <td>{ bid.volumeTaker.toFixed(3) }</td>
+        <td>{ bid.volumeMaker.toFixed(3) }</td>
+      </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
   <div id="token-selector" if={ state.showTokenSelector }>
     <div class="bg" onclick={ closeTokenSelector }></div>
     <div class="box">
@@ -69,6 +104,7 @@
     export default {
 
       config: {
+        isLimitOrder: false,
         defaultWSUrl: "wss://mainnet.infura.io/ws/v3/12522e5176814bfda74dd672929641a3",
         oneSplitAddress: "0x50FDA034C0Ce7a8f7EFDAebDA7Aa7cA21CC1267e",
         referralAddress: "0x52427b0035F494a21a0A4A1AbE04d679f789c821", // build deployer
@@ -281,6 +317,7 @@
           this.update({ outputToken: tokenData, outputUsd: null })
         }
 
+        this.fetchOrderBook()
         // this.updateBalances()
         this.closeTokenSelector()
         this.loadApproval()
@@ -451,6 +488,95 @@
       //   }, 60000)
       // },
 
+      isOrderBookFeatureEnabled() {
+        return window.location.host !== "metric.exchange"
+      },
+
+      async fetchOrderBook() {
+
+        var inputToken = this.state.inputToken
+        var outputToken = this.state.outputToken
+        let assetHeader = "0xf47261b0000000000000000000000000"
+        let wEthAddress = "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+
+        if (inputToken !== null && outputToken !== null && this.state.isLimitOrder) {
+
+          var inputTokenAddress = inputToken.address.substring(2).toLowerCase()
+          var outputTokenAddress = outputToken.address.substring(2).toLowerCase()
+
+          if (inputTokenAddress === "0000000000000000000000000000000000000000") {
+            inputTokenAddress = wEthAddress
+          }
+
+          if (outputTokenAddress === "0000000000000000000000000000000000000000") {
+            outputTokenAddress = wEthAddress
+          }
+
+          let url = `https://api.0x.org/sra/v3/orderbook?baseAssetData=${assetHeader}${inputTokenAddress}&quoteAssetData=${assetHeader}${outputTokenAddress}&perPage=25`
+
+          Array.prototype.sumByPrice = function() {
+            return this.reduce(function(groups, item) {
+              const key = parseFloat(item.price).toFixed(3)
+              groups[key] = groups[key] || {price: key, volumeMaker: 0, volumeTaker: 0}
+              groups[key] = {
+                price: parseFloat(key),
+                volumeMaker: item.volumeMaker + groups[key].volumeMaker,
+                volumeTaker: item.volumeTaker + groups[key].volumeTaker
+              }
+              return groups
+            }, {})
+          }
+
+          Array.prototype.extractBidsPriceAndVolume = function(inDecimals, outDecimals) {
+            return this.map(r => {
+                      return {
+                        price: parseFloat(((parseInt(r.order.makerAssetAmount) / (10 ** outDecimals)) / ( parseInt(r.order.takerAssetAmount) / (10 ** inDecimals)))),
+                        volumeMaker: parseFloat((parseInt(r.order.makerAssetAmount) / (10 ** outDecimals))),
+                        volumeTaker: parseFloat((parseInt(r.order.takerAssetAmount) / (10 ** inDecimals)))
+                      }
+                    }
+            )};
+
+          Array.prototype.extractAsksPriceAndVolume = function(inDecimals, outDecimals) {
+            return this.map(r => {
+                      return {
+                        price: parseFloat(((parseInt(r.order.takerAssetAmount) / (10 ** outDecimals)) / ( parseInt(r.order.makerAssetAmount) / (10 ** inDecimals)))),
+                        volumeMaker: parseFloat((parseInt(r.order.takerAssetAmount) / (10 ** outDecimals))),
+                        volumeTaker: parseFloat((parseInt(r.order.makerAssetAmount) / (10 ** inDecimals)))
+                      }
+                    }
+            )};
+
+          await fetch(url, {
+            method: "GET"
+          })
+          .then(result => result.json())
+          .then(result => {
+
+            this.state.bids = Object.values(result.bids.records.extractBidsPriceAndVolume(inputToken.decimals, outputToken.decimals).sumByPrice()).sort((a, b) => b.price - a.price)
+            this.state.asks = Object.values(result.asks.records.extractAsksPriceAndVolume(inputToken.decimals, outputToken.decimals).sumByPrice()).sort((a, b) => b.price - a.price)
+
+            this.update();
+
+            this.scrollOrderBookIntoView();
+          });
+        }
+      },
+
+      scrollOrderBookIntoView() {
+        var tableHeader = document.getElementById("order-book-header");
+        var orderBookSeparator = document.getElementById("orders-separator");
+        var visibleOrderBookRegion = document.getElementById("order-table-canvas");
+        
+        var tableHeaderSize = $(tableHeader).height();
+        var containerHeight = $(visibleOrderBookRegion).height() - tableHeaderSize; 
+        var elemTop = orderBookSeparator.offsetTop - tableHeaderSize;
+
+        if (elemTop > containerHeight) {
+           $(visibleOrderBookRegion).scrollTop(elemTop - containerHeight / 2);
+        }
+      },
+
       updatePrice() {
         if(this.canOutput()) {
 
@@ -599,7 +725,11 @@
         }
 
         if (this.state.isApproved) {
-          return "SWAP"
+          if (this.state.isLimitOrder) {
+            return "PLACE ORDER"
+          } else {
+            return "SWAP"
+          }
         }
 
         return "APPROVE"
@@ -638,6 +768,17 @@
         this.inputAmountParse(this.state.inputAmount)
 
         this.loadApproval()
+        this.fetchOrderBook()
+      },
+
+      switchToQuickSwap() {
+        this.state.isLimitOrder = false;
+        this.update();
+      },
+
+      async switchToLimitOrder() {
+        this.state.isLimitOrder = true;
+        this.fetchOrderBook();
       }
     }
   </script>

@@ -1,29 +1,27 @@
 
 .dropdown {
     position: fixed;
-    width: 40px;
-    height: 40px;
+    top: 20px;
     right: 10px;
-    top: 25px;
+    width: 40px;
+    height: 41px;
     border-radius: 5px;
     background: var(--settings-button-background-color);
     box-shadow: 0 4px 4px rgba(0, 0, 0, 0.01);
+    cursor: pointer;
 }
 
 .dropdown-logo {
-    position: fixed;
     margin: 11px;
-    cursor: pointer;
 }
 
 .dropdown-content {
     position: fixed;
-    margin-top: 40px;
+    margin-top: 5px;
     right: 10px;
     min-width: 316px;
     z-index: 99;
     background: var(--settings-drop-down-background-color);
-
     box-shadow: 0 4px 4px rgba(0, 0, 0, 0.01);
     border-radius: 5px;
 }
