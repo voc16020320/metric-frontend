@@ -70,6 +70,8 @@
 }
 
 html, body {
+  display: grid;
+  grid-template-rows: auto auto 50px;
   background: var(--main-background-color);
   font-family: 'Roboto Mono', monospace;
   color: var(--main-text-color);
@@ -108,7 +110,7 @@ input::-webkit-inner-spin-button {
 
 #swap-form {
   margin: 0 auto;
-  margin-top: 70px;
+  margin-top: 150px;
   border-radius: 5px;
   width: 340px;
   padding: 30px;
@@ -230,9 +232,11 @@ input::-webkit-inner-spin-button {
 }
 
 #footer {
-  position: absolute;
-  bottom: 30px;
-  right: 30px;
+  display: grid;
+  justify-items: end;
+  grid-template-columns: auto 65px 65px 65px;
+  margin-top: 50px;
+  margin-right: 22px;
 }
 
 #footer a, #footer a:hover, #footer a:visited {
