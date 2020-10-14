@@ -173,6 +173,10 @@ input::-webkit-inner-spin-button {
   justify-content: space-between;
 }
 
+.direction-title .balance-link {
+  cursor: pointer;
+}
+
 .usd-price {
   margin-top: 10px;
 }

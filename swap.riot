@@ -10,11 +10,11 @@
     <div class="section">
       <div class="direction-title">
         <div>From</div>
-        <div onclick={ balanceClickInputAmount } if={state.inputToken !== null && state.inputToken.balance > 0}>Balance: {state.inputToken.balance}</div>
+        <div class="balance-link" onclick={ balanceClickInputAmount } if={state.inputToken !== null && state.inputToken.displayBalance > 0}>Balance: {state.inputToken.displayBalance}</div>
       </div>
       <div class="input-container">
         <label class="currency" onclick={ openInputSelector }>{ inputSymbol() }</label>
-        <input type="number" class="input-amount" value={ state.inputAmount } onkeyup={ updateInputAmount } placeholder="0">
+        <input type="number" class="input-amount" value={ state.inputDisplayAmount } onkeyup={ updateInputAmount } placeholder="0">
         <div class="direction-title usd-price">{state.inputTokenUsd}</div>
       </div>
     </div>
@@ -26,7 +26,7 @@
     <div class="section">
     <div class="direction-title">
         <div>To</div>
-        <div if= { isOutputDefined() }>Balance: {state.outputToken.balance}</div>
+        <div if= { isOutputDefined() && state.outputToken.displayBalance > 0 }>Balance: {state.outputToken.displayBalance}</div>
       </div>
       <div class="input-container">
         <label class="currency" onclick={ openOutputSelector }>{ outputSymbol() }</label>
@@ -93,7 +93,7 @@
           <tr each={ token in state.visibleTokens.slice(0, 100) } onclick={ selectToken }>
             <td class="img"><img src="{ token.iconUrl }"></td>
             <td class="symbol">{ token.symbol }</td>
-            <td class="balance">{ token.balance }</td>
+            <td class="balance">{ token.displayBalance }</td>
           </tr>
         </table>
       </div>
@@ -124,7 +124,7 @@
           symbol: "ETH",
           address: "0x0000000000000000000000000000000000000000",
           decimals: 18,
-          balance : 0
+          displayBalance : 0
         },
         inputUsd: null,
         outputUsd: null,
@@ -211,10 +211,12 @@
 
             contract.methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
               balance = isNaN(balance) ? 0 : balance / (10**item.decimals)
-              container.balance = this.round(balance, 2)
+              container.actualBalance = balance
+              container.displayBalance = this.round(balance, 4)
             })
           } else {
-            container.balance = 0
+            container.displayBalance = 0
+            container.actualBalance = 0
           }
 
           return container
@@ -231,9 +233,11 @@
           var ethBalance = await web3.eth.getBalance(this.state.defaultAddress)
 
           ethBalance = isNaN(ethBalance) ? 0 : ethBalance / (10**18)
-          eth.balance = this.round(ethBalance, 2)
+          eth.actualBalance = ethBalance
+          eth.displayBalance = this.round(ethBalance, 4)
         } else {
-          eth.balance = 0
+          eth.displayBalance = 0
+          eth.actualBalance = 0
         }
 
         tokens.push(eth)
@@ -307,12 +311,13 @@
           symbol: symbol,
           address: this.tokenBySymbol(symbol).address,
           decimals: this.tokenBySymbol(symbol).decimals,
-          balance: this.tokenBySymbol(symbol).balance
+          displayBalance: this.tokenBySymbol(symbol).displayBalance,
+          actualBalance: this.tokenBySymbol(symbol).actualBalance
         }
 
         if (this.state.pendingTokenSelection === "input") {
           this.update({ inputToken: tokenData, inputUsd: null })
-          await this.inputAmountParse(this.state.inputAmount)
+          await this.inputAmountParse(this.state.inputActualAmount)
         } else {
           this.update({ outputToken: tokenData, outputUsd: null })
         }
@@ -325,8 +330,8 @@
 
       sortTokens(tokens, value) {
         return tokens.sort(function(a, b) {
-          if (a.balance > 0 || b.balance > 0) {
-            return b.balance - a.balance
+          if (a.actualBalance > 0 || b.actualBalance > 0) {
+            return b.actualBalance - a.actualBalance
           } else if (value instanceof String) {
             return a.symbol.toLowerCase().startsWith(value) ? -1 : 1
           } else {
@@ -338,7 +343,7 @@
       updateMetricBalance() {
         if (this.state.defaultAddress !== undefined && this.inputToken !== null) {
           this.erc20Contract(this.config.metricAddress).methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
-            var balance = isNaN(balance) ? 0 : this.round(balance / (10**18), 4)
+            var balance = isNaN(balance) ? 0 : this.round(balance / (10**18), 2)
             this.update({ metricBalance: balance })
           })
         }
@@ -348,16 +353,21 @@
         if (this.state.metricBalance >= 100) {
           return "No fees 🥳"
         } else {
-          var feeAmount = this.round(this.state.inputAmount * 0.003, 4)
-          return `${feeAmount} ${this.state.inputToken.symbol}`
+          if (this.state.inputToken !== null){
+            var feeAmount = this.round(this.state.inputActualAmount * 0.003, 4)
+            return `${feeAmount} ${this.state.inputToken.symbol}`
+          }
         }
       },
 
       priceText() {
-        var inputSymbol = this.state.inputToken.symbol
-        var outputSymbol = this.state.outputToken.symbol
-        var rate = this.round(this.state.conversionRate, 4)
-        return `${rate} ${outputSymbol} / ${inputSymbol}`
+        if (this.state.inputToken !== null)
+        {
+          var inputSymbol = this.state.inputToken.symbol
+          var outputSymbol = this.state.outputToken.symbol
+          var rate = this.round(this.state.conversionRate, 4)
+          return `${rate} ${outputSymbol} / ${inputSymbol}`
+        }
       },
 
       filterTokenSearch(e) {
@@ -377,7 +387,7 @@
 
                 contract.methods.balanceOf(this.state.defaultAddress).call().then((balance) => {
                   balance = isNaN(balance) ? 0 : balance / (10**token.decimals)
-                  token.balance = this.round(balance, 2)
+                  token.displayBalance = this.round(balance, 4)
 
                   this.state.availableTokens.push(token)
                   this.update({ visibleTokens: [token] })
@@ -418,8 +428,8 @@
       },
 
       sendSwap() {
-        var inputWei = (this.state.inputAmount * (10**this.state.inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false })
-        var ethAmount = (this.state.inputToken.symbol === "ETH") ? inputWei : 0
+        var inputWei = (this.state.inputActualAmount * (10**this.state.inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false })
+        var ethAmount = (this.state.inputToken.symbol == "ETH") ? inputWei : 0
         var swapFee = this.state.metricBalance >= 100 ? 0 : this.config.swapFee
 
         this.oneSplitContract().methods.swapWithReferral(
@@ -578,7 +588,7 @@
       },
 
       updatePrice() {
-        if(this.canOutput()) {
+        if(this.canOutput() && this.state.inputToken !== null) {
 
           var inputToken = this.state.inputToken
           var outputToken = this.state.outputToken
@@ -587,12 +597,12 @@
           this.oneSplitContract().methods.getExpectedReturn(
             inputToken.address,
             outputToken.address,
-            (this.state.inputAmount * (10**inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false }),
+            (this.state.inputActualAmount * (10**inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false }),
             "4",
             "0"
           ).call().then(async (result) => {
             var outputAmount = isNaN(result[0]) ? 0 : parseInt(result[0]) / (10**outputToken.decimals)
-            var conversionRate = outputAmount / that.state.inputAmount
+            var conversionRate = outputAmount / that.state.inputActualAmount
             var outputusd = ""
             if (this.canOutput()){
               if (this.state.outputUsd === null){
@@ -623,12 +633,17 @@
       },
 
       balanceClickInputAmount(){
-        this.inputAmountParse(this.state.inputToken.balance)
+        this.inputAmountParse(this.state.inputToken.actualBalance)
       },
 
       async inputAmountParse(val){
         let newInput = isNaN(val) ? 0 : parseFloat(val)
         newInput = isNaN(newInput) ? 0 : newInput
+        let newActualInput = newInput
+        if (this.state.inputToken !== null && newInput === this.state.inputToken.actualBalance)
+        {
+          newInput = this.round(newActualInput, 4)
+        }
         var inputusd = ''
         if (this.state.inputUsd === null)
         {
@@ -640,7 +655,7 @@
             inputusd = `≈ $${this.round(this.state.inputUsd * newInput, 2)}`
           }
 
-        this.update({inputAmount: newInput, inputTokenUsd: inputusd})
+        this.update({inputDisplayAmount: newInput, inputActualAmount: newActualInput, inputTokenUsd: inputusd})
       },
 
       async getTokenUsdPrice(token) {
@@ -674,12 +689,12 @@
       },
 
       canOutput() {
-        return (this.state.outputToken !== null && this.state.inputAmount > 0)
+        return (this.state.outputToken !== null && this.state.inputActualAmount > 0)
       },
 
       outputAmount() {
         if(this.canOutput()) {
-          return this.round(this.state.inputAmount * this.state.conversionRate, 4)
+          return this.round(this.state.inputActualAmount * this.state.conversionRate, 4)
         } else {
           return null
         }
@@ -760,12 +775,12 @@
         this.update({
           inputToken: outputToken,
           outputToken: inputToken,
-          inputAmount: this.outputAmount(),
+          inputDisplayAmount: this.outputAmount(),
           inputUsd : null,
           outputUsd: null
         })
 
-        this.inputAmountParse(this.state.inputAmount)
+        this.inputAmountParse(this.state.inputActualAmount)
 
         this.loadApproval()
         this.fetchOrderBook()
