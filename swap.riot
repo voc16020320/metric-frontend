@@ -670,11 +670,11 @@
       },
 
       isOutputDefined() {
-        return (this.state.outputToken != undefined)
+        return (this.state.outputToken !== null)
       },
 
       canOutput() {
-        return (this.state.outputToken !== undefined && this.state.inputAmount > 0)
+        return (this.state.outputToken !== null && this.state.inputAmount > 0)
       },
 
       outputAmount() {
