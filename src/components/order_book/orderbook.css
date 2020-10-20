@@ -1,0 +1,51 @@
+@import "../theme_colors/colors.css";
+
+#order-book {
+    display: grid;
+    align-items: center;
+    margin-top: 20px;
+    text-align: center;
+    justify-items: center;
+}
+
+#order-book-title {
+    font-family: "Inter", monospace;
+    font-size: 14px;
+    line-height: 32px;
+}
+
+#order-table-canvas {
+    height: 340px;
+    overflow-y: scroll;
+}
+
+.orders {
+    width: 450px;
+    font-size: 14px;
+    text-align: center;
+    line-height: 25px;
+}
+
+#orders-separator {
+    width: 450px;
+    height: 4px;
+    border: 3px solid var(--token-selector-border-color);
+}
+
+.bid {
+    color: #3FCCB0;
+}
+
+.ask {
+    color: #CC3F3F;
+}
+
+.orders thead th {
+    position: sticky;
+    top: 0;
+    font-size: 13px;
+    text-align: center;
+    line-height: 40px;
+    color: var(--token-selector-table-text-color);
+    background: var(--main-background-color);
+}

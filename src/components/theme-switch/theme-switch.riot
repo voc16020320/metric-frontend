@@ -1,0 +1,23 @@
+<theme-switch>
+    <div class="theme-switch-line">Dark mode</div>
+    <div class="theme-switch-line">
+        <div class="theme-switch-line-group">
+            <a href="#" class={ this.isDarkThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ this.setDarkTheme }>
+                On
+            </a>
+            <a href="#" class={ this.isLightThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ this.setLightTheme }>
+                Off
+            </a>
+        </div>
+    </div>
+    <script>
+        import './theme-switch.css'
+
+        export default {
+            state: {},
+            onMounted() {
+                this.initTheme()
+            }
+        }
+    </script>
+</theme-switch>

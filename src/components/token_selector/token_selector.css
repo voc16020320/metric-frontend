@@ -1,0 +1,83 @@
+@import "../theme_colors/colors.css";
+
+
+#token-selector .box {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    margin-left: -200px;
+    width: 400px;
+    height: 620px;
+    background: var(--token-selector-box-background-color);
+    border-radius: 5px;
+    border: 1px solid var(--token-selector-box-border-color);
+    color: var(--token-selector-box-text-color)  ;
+}
+
+#token-selector .wrapper {
+    padding: 30px 30px 0;
+}
+
+#token-selector .img {
+    width: 30px;
+    padding-left: 30px;
+}
+
+#token-selector .close {
+    text-align: right;
+}
+
+#token-selector .close img {
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+
+#token-selector .img img {
+    border-radius: 5px;
+    width: 25px;
+    margin-right: 10px;
+}
+
+#token-selector .tokens {
+    height: 500px;
+    overflow: auto;
+}
+
+#token-selector table {
+    color: var(--token-selector-table-text-color);
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-top: 30px;
+    width: 100%;
+}
+
+#token-selector table tr {
+    line-height: 45px;
+}
+
+#token-selector table tr:hover {
+    background: var(--token-selector-table-hover-background-color);
+    cursor: pointer;
+}
+
+#token-selector .balance {
+    text-align: right;
+    padding-right: 30px;
+}
+
+#token-selector .symbol {
+    text-align: left;
+}
+
+#token-selector input[type=text] {
+    -moz-appearance: textfield;
+    border: 0;
+    color: var(--token-selector-text-color);
+    background: var(--token-selector-background-color);
+    border-bottom: 1px solid var(--token-selector-border-color);
+    padding: 5px 0;
+    font-size: 16px;
+    outline: none;
+    margin-right: 10px;
+    width: 100%;
+}

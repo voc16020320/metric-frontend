@@ -1,0 +1,52 @@
+<main>
+    <header class="header">
+        <!-- <div class="notice">DEVELOPMENT PREVIEW</div> -->
+        <div class="header-logo header-left">
+            <a href="/">
+                <div class="brand-logo"></div>
+            </a>
+        </div>
+        <div class="header-links" id="top-nav">
+            <a href="https://metric.exchange/">Swap</a>
+            <a href="https://stake.metric.exchange/">Farm</a>
+            <a href="https://medium.com/@BUILD_Finance/introducing-metric-community-owned-dex-aggregator-a1cff8b8100d" target="_blank">About</a>
+        </div>
+        <div class="header-settings header-right">
+            <blocky/>
+            <settings/>
+        </div>
+    </header>
+
+    <swap/>
+
+    <div id="footer">
+        <a href="http://letsbuild.finance/" target="_blank">By BUILD Finance</a>
+        <a href="https://twitter.com/metricexchange" target="_blank">Twitter</a>
+        <a href="https://discord.gg/FN3sNSE" target="_blank">Discord</a>
+        <a href="https://medium.com/@BUILD_Finance" target="_blank">Medium</a>
+    </div>
+
+    <script>
+        import './main.css'
+        import Settings from '../settings/settings.riot'
+        import Blocky from '../blocky/blocky.riot'
+        import Swap from '../swap_menue/swap.riot'
+
+        export default {
+            components: {
+                Settings,
+                Blocky,
+                Swap
+            },
+            async onMounted() {
+                document.title = "Metric Exchange"
+                await this.initWeb3(this)
+                await this.loadTokenList(this)
+            },
+            async onBeforeUpdate() {
+                await this.fetchTokensBalances(this.accountAddress())
+            }
+        }
+    </script>
+
+</main>

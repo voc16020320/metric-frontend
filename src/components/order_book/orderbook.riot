@@ -1,0 +1,133 @@
+<order-book>
+
+    <div id="order-book">
+        <div id="order-book-title">ORDER BOOK</div>
+        <div id="order-table-canvas">
+            <table class="orders">
+                <thead class="order-book-columns" id="order-book-header">
+                <tr>
+                    <th>Price { props.outputToken.symbol }</th>
+                    <th>Amount { props.inputToken.symbol }</th>
+                    <th>Total { props.outputToken.symbol }</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr each="{ask in state.asks}" class="ask">
+                    <td>{ ask.price.toFixed(3) }</td>
+                    <td>{ ask.volumeTaker.toFixed(3) }</td>
+                    <td>{ ask.volumeMaker.toFixed(3) }</td>
+                </tr>
+                <tr id="orders-separator"/>
+                <tr each="{bid in state.bids}" class="bid">
+                    <td>{ bid.price.toFixed(3) }</td>
+                    <td>{ bid.volumeTaker.toFixed(3) }</td>
+                    <td>{ bid.volumeMaker.toFixed(3) }</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        import './orderbook.css'
+
+        export default {
+            state: {
+                asks: [],
+                bids: []
+            },
+            async onBeforeUpdate(props) {
+                if (props.inputToken !== this.state.inputToken || props.outputToken !== this.state.outputToken) {
+
+                  this.state.inputToken = props.inputToken
+                  this.state.outputToken = props.outputToken
+
+                  await this.fetchOrderBook(props.inputToken, props.outputToken)
+                }
+            },
+            onUpdated() {
+                this.scrollOrderBookIntoView()
+            },
+            async fetchOrderBook(inputToken, outputToken) {
+
+                let assetHeader = "0xf47261b0000000000000000000000000"
+                let wEthAddress = "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+
+                if (inputToken !== null && outputToken !== null) {
+
+                    let inputTokenAddress = inputToken.address.substring(2).toLowerCase()
+                    let outputTokenAddress = outputToken.address.substring(2).toLowerCase()
+
+                    if (inputTokenAddress === "0000000000000000000000000000000000000000") {
+                        inputTokenAddress = wEthAddress
+                    }
+
+                    if (outputTokenAddress === "0000000000000000000000000000000000000000") {
+                        outputTokenAddress = wEthAddress
+                    }
+
+                    let url = `https://api.0x.org/sra/v3/orderbook?baseAssetData=${assetHeader}${inputTokenAddress}&quoteAssetData=${assetHeader}${outputTokenAddress}&perPage=25`
+
+                    Array.prototype.sumByPrice = function() {
+                        return this.reduce(function(groups, item) {
+                            const key = parseFloat(item.price).toFixed(3)
+                            groups[key] = groups[key] || {price: key, volumeMaker: 0, volumeTaker: 0}
+                            groups[key] = {
+                                price: parseFloat(key),
+                                volumeMaker: item.volumeMaker + groups[key].volumeMaker,
+                                volumeTaker: item.volumeTaker + groups[key].volumeTaker
+                            }
+                            return groups
+                        }, {})
+                    }
+
+                    Array.prototype.extractBidsPriceAndVolume = function(inDecimals, outDecimals) {
+                        return this.map(r => {
+                                return {
+                                    price: parseFloat(((parseInt(r.order.makerAssetAmount) / (10 ** outDecimals)) / ( parseInt(r.order.takerAssetAmount) / (10 ** inDecimals)))),
+                                    volumeMaker: parseFloat((parseInt(r.order.makerAssetAmount) / (10 ** outDecimals))),
+                                    volumeTaker: parseFloat((parseInt(r.order.takerAssetAmount) / (10 ** inDecimals)))
+                                }
+                            }
+                        )};
+
+                    Array.prototype.extractAsksPriceAndVolume = function(inDecimals, outDecimals) {
+                        return this.map(r => {
+                                return {
+                                    price: parseFloat(((parseInt(r.order.takerAssetAmount) / (10 ** outDecimals)) / ( parseInt(r.order.makerAssetAmount) / (10 ** inDecimals)))),
+                                    volumeMaker: parseFloat((parseInt(r.order.takerAssetAmount) / (10 ** outDecimals))),
+                                    volumeTaker: parseFloat((parseInt(r.order.makerAssetAmount) / (10 ** inDecimals)))
+                                }
+                            }
+                        )};
+
+                    await fetch(url, {
+                        method: "GET"
+                    })
+                    .then(result => result.json())
+                    .then(result => {
+
+                        this.state.bids = Object.values(result.bids.records.extractBidsPriceAndVolume(inputToken.decimals, outputToken.decimals).sumByPrice()).sort((a, b) => b.price - a.price)
+                        this.state.asks = Object.values(result.asks.records.extractAsksPriceAndVolume(inputToken.decimals, outputToken.decimals).sumByPrice()).sort((a, b) => b.price - a.price)
+
+                    });
+                }
+            },
+
+            scrollOrderBookIntoView() {
+                let tableHeader = document.getElementById("order-book-header");
+                let orderBookSeparator = document.getElementById("orders-separator");
+                let visibleOrderBookRegion = document.getElementById("order-table-canvas");
+
+                let tableHeaderSize = $(tableHeader).height();
+                let containerHeight = $(visibleOrderBookRegion).height() - tableHeaderSize;
+                let elemTop = orderBookSeparator.offsetTop - tableHeaderSize;
+
+                if (elemTop > containerHeight) {
+                    $(visibleOrderBookRegion).scrollTop(elemTop - containerHeight / 2);
+                }
+            },
+        }
+
+    </script>
+</order-book>

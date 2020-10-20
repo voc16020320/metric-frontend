@@ -1,0 +1,112 @@
+@import '../theme_colors/colors.css';
+
+#swap-form {
+  margin: 0 auto;
+  margin-top: 150px;
+  border-radius: 5px;
+  width: 340px;
+  padding: 30px;
+  background: var(--swap-form-background-color);
+  border: 1px solid var(--swap-from-border-color);
+  box-shadow: 0 1px 5px 1px rgba(0, 0, 0, 0.05);
+}
+
+#swap-form .section {
+  margin-bottom: 20px;
+}
+
+#swap-form .section .trade-options {
+  display: grid;
+  grid-auto-flow: column;
+  text-align: center;
+  margin-left: 50px;
+  margin-right: 50px;
+  color: var(--token-selector-table-text-color);
+}
+
+#swap-form .section .trade-options .trade-option-button {
+  cursor: pointer;
+}
+
+#swap-form .section .trade-options .trade-option-active-button {
+  cursor: pointer;
+  color: var(--main-text-color);
+}
+
+.swap-button {
+  margin-top: 30px;
+  background: var(--swap-button-background-color);
+  border-radius: 4px;
+  color: var(--swap-button-text-color);
+  text-align: center;
+  padding: 9px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.switch {
+  display: flex;
+  justify-content: center;
+}
+
+.switch-button-image {
+  cursor: pointer;
+  background-image: var(--swap-button-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 30px;
+  width: 30px;
+}
+
+.direction-title {
+  color: var(--swap-direction-title-color);
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.direction-title .balance-link {
+  cursor: pointer;
+}
+
+.usd-price {
+  margin-top: 10px;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+  border: 0;
+  color: var(--token-selector-text-color);
+  background: var(--token-selector-background-color);
+  border-bottom: 1px solid var(--token-selector-border-color);
+  padding: 5px 0;
+  font-size: 16px;
+  outline: none;
+  margin-right: 10px;
+  width: 100%;
+}
+
+.currency {
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.input-container {
+  position: relative;
+}
+
+.input-container label {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.selector-active {
+  display: block;
+}
+
+.selector-hidden {
+  display: none;
+}
+
+

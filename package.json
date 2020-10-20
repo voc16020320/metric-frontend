@@ -1,0 +1,39 @@
+{
+  "name": "metric-frontend",
+  "version": "1.0.0",
+  "description": "Decentralized Ethereum exchange by Build.finance",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "parcel index.html --open",
+    "build": "parcel build index.html --out-dir=dist"
+  },
+  "engines": {
+    "node": ">=10.16.0"
+  },
+  "devDependencies": {
+    "@riotjs/compiler": "^4.11.0",
+    "@riotjs/hot-reload": "^4.0.1",
+    "@riotjs/parcel-plugin-riot": "^4.0.1",
+    "parcel-bundler": "^1.12.4"
+  },
+  "dependencies": {
+    "@riotjs/route": "^5.2.0",
+    "babel-polyfill": "^6.26.0",
+    "blockies": "0.0.2",
+    "jquery": "^3.5.1",
+    "riot": "^4.14.0",
+    "settings": "^0.1.1",
+    "web3": "^1.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/build-finance/metric-frontend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/build-finance/metric-frontend/issues"
+  },
+  "homepage": "https://github.com/build-finance/metric-frontend#readme"
+}

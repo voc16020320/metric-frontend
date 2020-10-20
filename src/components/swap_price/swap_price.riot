@@ -1,0 +1,43 @@
+<swap-price>
+
+    <table id="swap-price">
+        <tr>
+            <td class="text-left">Price</td>
+            <td class="text-right">{ priceText() }</td>
+        </tr>
+        <tr>
+            <td class="text-left">Swap fee</td>
+            <td class="text-right">{ swapFeeText() }</td>
+        </tr>
+        <tr>
+            <td class="text-left">METRIC balance</td>
+            <td class="text-right">{ props.metricBalance }</td>
+        </tr>
+    </table>
+
+    <script>
+
+        import './swap_price.css'
+
+        export default {
+
+            swapFeeText() {
+                if (this.props.metricBalance >= 100) {
+                    return "No fees 🥳"
+                } else {
+                    let feeAmount = this.round(this.props.amount * 0.003, 4)
+                    return `${feeAmount} ${this.props.inputToken.symbol}`
+                }
+            },
+
+            priceText() {
+                let inputSymbol = this.props.inputToken.symbol
+                let outputSymbol = this.props.outputToken.symbol
+                let rate = this.round(this.props.conversionRate, 4)
+                return `${rate} ${outputSymbol} / ${inputSymbol}`
+            }
+        }
+
+    </script>
+
+</swap-price>

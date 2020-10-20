@@ -1,0 +1,74 @@
+<blocky>
+
+    <div id="identicon" if={ this.isWalletConnected() } ></div>
+    <a
+        if={ this.isWalletConnected() }
+        href="https://etherscan.io/address/{ this.accountAddress() }"
+        target="_blank">
+        <span id="address">{ state.obfuscatedAccount }</span>
+    </a>
+    <div id="wallet-connect" if={ !this.isWalletConnected() } onclick={ this.connectWallet }>Connect wallet</div>
+
+    <script>
+        import './blocky.css'
+        import Web3 from 'web3'
+
+        let blocky;
+
+        export default {
+
+            state: {
+                obfuscatedAccount: null
+            },
+
+            onUpdated() {
+                this.handleAccounts()
+            },
+
+            onMounted() {
+                Web3.givenProvider.on("accountsChanged", (accounts) => {
+                    this.updateAccountAddress(accounts)
+                    this.handleAccounts()
+                    this.update()
+                });
+            },
+
+            handleAccounts() {
+
+                if(!!blocky) {
+                    this.removeBlocky();
+                }
+
+                if (this.accountAddress() !== undefined) {
+                    this.state.obfuscatedAccount = this.accountAddress().substr(0, 8) + '...' + this.accountAddress().substr(38, 40);
+                }
+
+                // Doesn't match light theme so removed for now
+                // this.initBlocky();
+            },
+
+            initBlocky() {
+                blocky = blockies.create({ // All options are optional
+                    seed: this.accountAddress(), // seed used to generate icon data, default: random
+                    color: '#60FFD9', // to manually specify the icon color, default: random
+                    bgcolor: '#1A1A1A', // choose a different background color, default: random
+                    size: 8, // width/height of the icon in blocks, default: 8
+                    scale: 2, // width/height of each block in pixels, default: 4
+                    spotcolor: '#000' // each pixel has a 13% chance of being of a third color,
+                    // default: random. Set to -1 to disable it. These "spots" create structures
+                    // that look like eyes, mouths and noses.
+                });
+
+                document.getElementById("identicon").appendChild(blocky);
+
+            },
+
+            removeBlocky() {
+                document.getElementById("identicon").removeChild(blocky);
+
+                blocky = null;
+                this.state.obfuscatedAccount = null;
+            }
+        }
+    </script>
+</blocky>

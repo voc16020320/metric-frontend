@@ -4,47 +4,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Metric.exchange</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="theme-switch.css">
-  <link rel="stylesheet" href="settings.css">
-
-  <script src="https://cdn.jsdelivr.net/npm/riot@4/riot+compiler.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.2.11/dist/web3.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-
-  <script src="blockies.min.js"></script>
-  <script src="swap.riot" type="riot"></script>
-  <script src="theme-switch.riot" type="riot"></script>
-  <script src="settings.riot" type="riot"></script>
-  <script src="blocky.riot" type="riot"></script>
-  <script src="app.js"></script>
 </head>
 <body>
-  <header class="header">
-    <!-- <div class="notice">DEVELOPMENT PREVIEW</div> -->
-    <div class="header-logo header-left">
-        <a href="/">
-          <div class="brand-logo"></div>
-        </a>
-    </div>
-    <div class="header-links" id="top-nav">
-      <a href="https://metric.exchange/">Swap</a>
-      <a href="https://stake.metric.exchange/">Farm</a>
-      <a href="https://medium.com/@BUILD_Finance/introducing-metric-community-owned-dex-aggregator-a1cff8b8100d" target="_blank">About</a>
-    </div>
-    <div class="header-settings header-right">
-      <blocky></blocky>
-      <settings></settings>
-    </div>
-  </header>
 
-  <swap></swap>
+  <div id="app"></div>
+  <script src="src/app.js"></script>
 
-  <div id="footer">
-    <a href="http://letsbuild.finance/" target="_blank">By BUILD Finance</a>
-    <a href="https://twitter.com/metricexchange" target="_blank">Twitter</a>
-    <a href="https://discord.gg/FN3sNSE" target="_blank">Discord</a>
-    <a href="https://medium.com/@BUILD_Finance" target="_blank">Medium</a>
-  </div>
 </body>
 </html>

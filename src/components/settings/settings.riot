@@ -2,18 +2,25 @@
 
     <div class="dropdown" onclick={ toggleDropDown } id="settings-icon">
         <div class="dropdown-logo">
-            <img src="settings.svg">
+            <img src={ Image } alt="settings">
         </div>
     </div>
 
     <div style={ isClicked() ? "display:block" : 'display:none'} >
         <div class="dropdown-content" id="settings-dropdown">
-            <theme-switch></theme-switch>
+            <theme-switch/>
         </div>
     </div>
 
     <script>
+        import Image from './settings.svg'
+        import './settings.css'
+        import ThemeSwitch from '../theme-switch/theme-switch.riot'
+
         export default {
+            components: {
+                ThemeSwitch
+            },
             state: {
                 dropDownClicked: false
             },

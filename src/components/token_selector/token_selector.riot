@@ -1,0 +1,132 @@
+<token-selector>
+
+    <div id="token-selector">
+        <div class="box">
+            <div class="wrapper">
+                <div class="close"><img src={ Image } onclick={ this.cleanUpAndClose }></div>
+                <input type="text" placeholder="Search symbol or paste address" oninput={ filterTokenSearch }>
+            </div>
+            <div class="tokens">
+                <table>
+                    <tr each={ token in state.filteredTokens } key={ token.symbol } onclick={ fetchTokenInfo }>
+                        <td class="img"><img src="{ fetchTokenLogoURI(token) }" alt=" "></td>
+                        <td class="symbol">{ token.symbol }</td>
+                        <td class="balance">{ this.round(token.balance, 4) }</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        import Image from './close.svg'
+        import UnknownTokenLightImage from './unknown-token-light.svg'
+        import UnknownTokenDarkImage from './unknown-token-dark.svg'
+        import './token_selector.css'
+
+        export default {
+            state: {
+                filteredTokens: [],
+                addressRegEx: new RegExp("0x[0-9a-zA-Z]{40}")
+            },
+            async onMounted() {
+                await this.buildFilteredTokenList()
+                document.addEventListener('click', this.listenToSelectorCloseClick)
+            },
+            listenToSelectorCloseClick(e) {
+                let selector = document.getElementById('token-selector');
+                let swap = document.getElementById('swap-form');
+
+                if (selector !== null && !selector.contains(e.target) && !swap.contains(e.target)) {
+                    this.cleanUpAndClose();
+                }
+            },
+            cleanUpAndClose() {
+                document.removeEventListener('click', this.listenToSelectorCloseClick)
+                this.props.closeTokenSelector();
+            },
+            fetchTokenInfo(e) {
+                var symbol = e.target.parentElement.cells[1].textContent
+
+                var tokenData = {
+                  symbol: symbol,
+                  address: this.tokenBySymbol(symbol).address,
+                  decimals: this.tokenBySymbol(symbol).decimals,
+                  balance: this.tokenBySymbol(symbol).balance,
+                }
+
+                this.props.selectToken(tokenData)
+            },
+            tokenBySymbol(symbol) {
+              return this.tokensList().filter(function(x) {
+                 return x.symbol.toLowerCase() === symbol.toLowerCase()
+              })[0]
+            },
+            filterTokenSearch() {
+                this.buildFilteredTokenList()
+                this.update()
+            },
+            async buildFilteredTokenList() {
+                let that = this
+                let filter = this.$("#token-selector input").value.toLowerCase()
+
+                if (filter !== null && filter.length === 0) {
+                    filter = null
+                }
+
+                if (filter !== null &&
+                    filter.match(this.state.addressRegEx) &&
+                    this.tokensList().findIndex(t => t.address.toLowerCase() === filter) === -1) {
+
+                    let token = { address: filter }
+                    let contract = new web3.eth.Contract(this.erc20Abi, filter)
+
+                    token.symbol = await contract.methods.symbol().call().then(s => s.toUpperCase())
+                    token.decimals = await contract.methods.decimals().call().then(s => parseInt(s))
+                    token.balance =
+                        await contract.methods.balanceOf(this.accountAddress()).call().then(s => parseInt(s)) / (10**token.decimals)
+
+                    this.addToken(token)
+                }
+
+                this.state.filteredTokens =
+                    this.sortTokens(
+                        this.tokensList().filter(function(x) {
+                            return filter == null ||
+                                x.symbol.toLowerCase().includes(filter) ||
+                                (filter.match(that.state.addressRegEx) && x.address.toLowerCase().includes(filter))
+                        }),
+                        filter
+                    )
+            },
+            sortTokens(tokens, value) {
+                let that = this
+                return tokens.sort(function(a, b) {
+                    if (a.balance > 0 || b.balance > 0) {
+                        return b.balance - a.balance
+                    } else if (value === null) {
+                        return a.symbol.localeCompare(b.symbol, 'en', { sensitivity: 'base' })
+                    } else if (value.match(that.state.addressRegEx)) {
+                        return a.address.localeCompare(value, 'en', { sensitivity: 'base' })
+                    } else {
+                        return a.symbol.localeCompare(value, 'en', { sensitivity: 'base' })
+                    }
+                })
+            },
+            fetchTokenLogoURI(token) {
+                if (token.logoURI !== undefined) {
+                    return token.logoURI
+                } else {
+                    if (this.isLightThemeSet()) {
+                        return UnknownTokenLightImage
+                    } else {
+                        return UnknownTokenDarkImage
+                    }
+                }
+            }
+        }
+
+    </script>
+
+</token-selector>

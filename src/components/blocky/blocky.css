@@ -1,0 +1,29 @@
+@import '../theme_colors/colors.css';
+
+blocky {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    border: none;
+    outline: none;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+blocky #address {
+    vertical-align: center;
+    cursor: pointer;
+    color: var(--main-text-color);
+    font-style: normal;
+}
+
+blocky #wallet-connect {
+    vertical-align: center;
+    cursor: pointer;
+    color: var(--main-text-color);
+    font-style: normal;
+}
+
+blocky #identicon {
+    margin-right: 10px;
+    border-radius: 5px;
+}

@@ -1,7 +1,7 @@
+@import "../theme_colors/colors.css";
 
 .dropdown {
-    position: fixed;
-    top: 20px;
+    position: absolute;
     right: 10px;
     width: 40px;
     height: 41px;
@@ -16,8 +16,8 @@
 }
 
 .dropdown-content {
-    position: fixed;
-    margin-top: 5px;
+    position: absolute;
+    margin-top: 45px;
     right: 10px;
     min-width: 316px;
     z-index: 99;
