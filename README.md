@@ -8,4 +8,4 @@
 ## Development
 
 - Start UI locally `npm start`
-- Bundle for prod `npm build`
+- Bundle for prod `npm run-script build`
