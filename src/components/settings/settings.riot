@@ -2,7 +2,7 @@
 
     <div class="dropdown" onclick={ toggleDropDown } id="settings-icon">
         <div class="dropdown-logo">
-            <img src={ Image } alt="settings">
+            <img src={ state.icon } alt="settings">
         </div>
     </div>
 
@@ -22,6 +22,7 @@
                 ThemeSwitch
             },
             state: {
+                icon: Image,
                 dropDownClicked: false
             },
             onMounted() {

@@ -20,7 +20,7 @@ export async function initWeb3(observer) {
             updateAccountAddressAndRefresh(accounts, observer)
         })
 
-        console.log('connected wallet:', walletAddress);
+        console.log('connected wallet');
 
     } else {
         walletAddress = "0x0000000000000000000000000000000000000000"
@@ -45,7 +45,6 @@ export async function connectWallet() {
 
 export function updateAccountAddress(accounts) {
     walletAddress = accounts[0]
-    console.log('updating account address:', walletAddress);
 }
 
 function updateAccountAddressAndRefresh(accounts, observer) {

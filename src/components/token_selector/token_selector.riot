@@ -9,7 +9,7 @@
             <div class="tokens">
                 <table>
                     <tr each={ token in state.filteredTokens } key={ token.symbol } onclick={ fetchTokenInfo }>
-                        <td class="img"><img src="{ fetchTokenLogoURI(token) }" alt=" "></td>
+                        <td class="img"><img src="{ fetchTokenLogoURI(token) }" alt=" " onerror={ changeLogoToDefault }></td>
                         <td class="symbol">{ token.symbol }</td>
                         <td class="balance">{ this.round(token.balance, 4) }</td>
                     </tr>
@@ -24,6 +24,7 @@
         import UnknownTokenLightImage from './unknown-token-light.svg'
         import UnknownTokenDarkImage from './unknown-token-dark.svg'
         import './token_selector.css'
+        import { Erc20ContractProxy } from '../../common/erc20_contract_proxy'
 
         export default {
             state: {
@@ -33,6 +34,9 @@
             async onMounted() {
                 await this.buildFilteredTokenList()
                 document.addEventListener('click', this.listenToSelectorCloseClick)
+            },
+            changeLogoToDefault(e) {
+                e.target.setAttribute("src", this.defaultTokenLogo())
             },
             listenToSelectorCloseClick(e) {
                 let selector = document.getElementById('token-selector');
@@ -80,7 +84,7 @@
                     this.tokensList().findIndex(t => t.address.toLowerCase() === filter) === -1) {
 
                     let token = { address: filter }
-                    let contract = new web3.eth.Contract(this.erc20Abi, filter)
+                    let contract = Erc20ContractProxy.getContract(filter)
 
                     token.symbol = await contract.methods.symbol().call().then(s => s.toUpperCase())
                     token.decimals = await contract.methods.decimals().call().then(s => parseInt(s))
@@ -118,11 +122,14 @@
                 if (token.logoURI !== undefined) {
                     return token.logoURI
                 } else {
-                    if (this.isLightThemeSet()) {
-                        return UnknownTokenLightImage
-                    } else {
-                        return UnknownTokenDarkImage
-                    }
+                    return this.defaultTokenLogo()
+                }
+            },
+            defaultTokenLogo() {
+                if (this.isLightThemeSet()) {
+                    return UnknownTokenLightImage
+                } else {
+                    return UnknownTokenDarkImage
                 }
             }
         }

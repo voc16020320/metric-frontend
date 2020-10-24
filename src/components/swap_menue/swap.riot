@@ -18,7 +18,7 @@
       <div class="input-container">
         <label class="currency" onclick={ openInputSelector }>{ inputSymbol() }</label>
         <input type="number" class="input-amount" value={ this.round(state.inputAmount, 4) } onkeyup={ updateInputAmount } placeholder="0">
-        <div class="direction-title usd-price">{state.inputTokenUsd}</div>
+        <div class="direction-title usd-price">{state.inputTokenUsd === 0 ? null : state.inputTokenUsd}</div>
       </div>
     </div>
 
@@ -33,8 +33,8 @@
       </div>
       <div class="input-container">
         <label class="currency" onclick={ openOutputSelector }>{ outputSymbol() }</label>
-        <input type="number" disabled="disabled" class="output-amount" value={ outputAmount() } placeholder="0">
-        <div class="direction-title usd-price">{state.outputTokenUsd}</div>
+        <input type="number" id="output-token-field" class="output-amount" value={ outputAmount() } onkeyup={ updateOutputAmount } placeholder="0" disabled>
+        <div class="direction-title usd-price">{state.outputTokenUsd === 0 ? null : state.outputTokenUsd}</div>
       </div>
     </div>
 
@@ -42,7 +42,7 @@
   </div>
 
   <swap-price
-          if={ canOutput() && state.conversionRate !== undefined }
+          if="{ canOutput() && state.isLimitOrder === false && state.conversionRate !== undefined }"
           inputToken={ state.inputToken }
           outputToken={ state.outputToken }
           conversionRate={ state.conversionRate }
@@ -67,6 +67,10 @@
     import OrderBook from '../order_book/orderbook.riot'
     import SwapPrice from '../swap_price/swap_price.riot'
     import TokenSelector from '../token_selector/token_selector.riot'
+    import { getTokenUsdPrice } from '../../common/token_price_proxy'
+    import { ZeroXOrdersProxy } from '../../common/0x_orders_proxy'
+    import { OneSplitContactProxy } from '../../common/one_split_contract_proxy'
+    import { Erc20ContractProxy } from '../../common/erc20_contract_proxy'
 
     export default {
 
@@ -78,26 +82,33 @@
 
       config: {
         isLimitOrder: false,
-        oneSplitAddress: "0x50FDA034C0Ce7a8f7EFDAebDA7Aa7cA21CC1267e",
         referralAddress: "0x52427b0035F494a21a0A4A1AbE04d679f789c821", // build deployer
-        swapFee: (3000000000000000).toString(),
-        oneSplitAbi: [ { "constant": true, "inputs": [ { "internalType": "contract IERC20", "name": "fromToken", "type": "address" }, { "internalType": "contract IERC20", "name": "destToken", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "parts", "type": "uint256" }, { "internalType": "uint256", "name": "flags", "type": "uint256" } ], "name": "getExpectedReturn", "outputs": [ { "internalType": "uint256", "name": "returnAmount", "type": "uint256" }, { "internalType": "uint256[]", "name": "distribution", "type": "uint256[]" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "internalType": "contract IERC20", "name": "fromToken", "type": "address" }, { "internalType": "contract IERC20", "name": "destToken", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "minReturn", "type": "uint256" }, { "internalType": "uint256[]", "name": "distribution", "type": "uint256[]" }, { "internalType": "uint256", "name": "flags", "type": "uint256" }, { "internalType": "address", "name": "referral", "type": "address" }, { "internalType": "uint256", "name": "feePercent", "type": "uint256" } ], "name": "swapWithReferral", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "payable": true, "stateMutability": "payable", "type": "function" } ]
+        swapFee: (3000000000000000).toString()
       },
 
       state: {
         isApproved: true,
         inputAmount: 0,
-        inputUsd: null,
-        outputUsd: null,
-        outputToken: null,
-        showTokenSelector: false
-      },
-
-      onBeforeMount() {
-        this.state.inputToken = this.nativeTokens.ethereum
+        outputAmount: 0,
+        inputTokenUsd: 0,
+        outputTokenUsd: 0,
+        showTokenSelector: false,
+        metricToken: null,
+        inputToken: null,
+        outputToken: null
       },
 
       onBeforeUpdate() {
+
+        if (this.state.inputToken === null) {
+          let token = this.tokensList().find(t => t.symbol.toLowerCase() === "eth")
+          this.state.inputToken = token === undefined ? null : token
+        }
+
+        if (this.state.metricToken === null) {
+          let token = this.tokensList().find(t => t.symbol.toLowerCase() === "metric")
+          this.state.metricToken = token === undefined ? null : token
+        }
 
         if (this.state.inputToken !== null) {
           let updateInputToken = this.tokensList().find(t => t.symbol === this.state.inputToken.symbol)
@@ -117,7 +128,7 @@
 
       onMounted() {
         this.updatePriceAndReschedule()
-        this.updateMeticBalanceAndReschedule()
+        this.updateMetricBalanceAndReschedule()
       },
 
       openInputSelector() {
@@ -141,36 +152,24 @@
       async selectToken(token) {
 
         if (this.state.pendingTokenSelection === "input") {
-          this.update({ inputToken: token, inputUsd: null })
+          this.update({ inputToken: token, inputUsd: 0 })
 
           await this.inputAmountParse(this.state.inputAmount)
         } else {
-          this.update({ outputToken: token, outputUsd: null })
+          this.update({ outputToken: token, outputTokenUsd: 0, outputAmount: 0 })
         }
 
         this.closeTokenSelector()
-        this.loadApproval()
+        await this.loadApproval()
       },
 
       updateMetricBalance() {
         if (this.accountAddress() !== undefined && this.inputToken !== null) {
-          this.erc20Contract(this.nativeTokens.metric.address).methods.balanceOf(this.accountAddress()).call().then((balance) => {
+          Erc20ContractProxy.erc20Contract(this.state.metricToken.address).methods.balanceOf(this.accountAddress()).call().then((balance) => {
             const cleanedBalance = isNaN(balance) ? 0 : this.round(balance / (10 ** 18), 4);
             this.update({ metricBalance: cleanedBalance })
           })
         }
-      },
-
-      erc20Contract(contractAddress) {
-        return this.getContract(this.erc20Abi, contractAddress)
-      },
-
-      oneSplitContract() {
-        return this.getContract(this.config.oneSplitAbi, this.config.oneSplitAddress)
-      },
-
-      getContract(abi, address) {
-        return new window.web3.eth.Contract(abi, address)
       },
 
       sendSwap() {
@@ -178,7 +177,7 @@
         var ethAmount = (this.state.inputToken.symbol === "ETH") ? inputWei : 0
         var swapFee = this.state.metricBalance >= 100 ? 0 : this.config.swapFee
 
-        this.oneSplitContract().methods.swapWithReferral(
+        OneSplitContactProxy.oneSplitContract().methods.swapWithReferral(
           this.state.inputToken.address,
           this.state.outputToken.address,
           inputWei,
@@ -190,20 +189,20 @@
         ).send({ from: this.accountAddress(), value: ethAmount })
       },
 
-      updatePriceAndReschedule() {
-        this.updatePrice()
+      async updatePriceAndReschedule() {
+        await this.updatePrice()
         let that = this
-        setTimeout(function () {
-          that.updatePriceAndReschedule()
+        setTimeout(async function () {
+          await that.updatePriceAndReschedule()
         }, 1000)
       },
 
-      updateMeticBalanceAndReschedule() {
+      updateMetricBalanceAndReschedule() {
         this.updateMetricBalance()
         let that = this
 
         setTimeout(function () {
-          that.updateMeticBalanceAndReschedule()
+          that.updateMetricBalanceAndReschedule()
         }, 5000)
       },
 
@@ -211,96 +210,87 @@
         return window.location.host !== "metric.exchange"
       },
 
-      updatePrice() {
-        if(this.canOutput() && this.state.inputToken !== null) {
+      async updatePrice() {
+        if (!this.state.isLimitOrder) {
+          if (this.canOutput()) {
 
-          var inputToken = this.state.inputToken
-          var outputToken = this.state.outputToken
-          var that = this
+            let inputToken = this.state.inputToken
+            let outputToken = this.state.outputToken
+            let result = await OneSplitContactProxy.oneSplitContract().methods.getExpectedReturn(
+                    inputToken.address,
+                    outputToken.address,
+                    (this.state.inputAmount * (10 ** inputToken.decimals)).toLocaleString("fullwide", {useGrouping: false}),
+                    "4",
+                    "0"
+            ).call()
 
-          this.oneSplitContract().methods.getExpectedReturn(
-            inputToken.address,
-            outputToken.address,
-            (this.state.inputAmount * (10**inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false }),
-            "4",
-            "0"
-          ).call().then(async (result) => {
-            var outputAmount = isNaN(result[0]) ? 0 : parseInt(result[0]) / (10**outputToken.decimals)
-            var conversionRate = outputAmount / that.state.inputAmount
-            var outputusd = ""
-            if (this.canOutput()){
-              if (this.state.outputUsd === null){
-                this.state.outputUsd = await this.getTokenUsdPrice(this.state.outputToken)
-              }
-              var total = this.state.outputUsd * outputAmount;
-              if (total > 0){
-                outputusd = `≈ $${this.round(this.state.outputUsd * outputAmount, 2)}`
-              }
+            let outputAmount = isNaN(result[0]) ? 0 : parseInt(result[0]) / (10 ** outputToken.decimals)
+            let conversionRate = outputAmount / this.state.inputAmount
+
+            let usdPrice = await getTokenUsdPrice(outputToken.address, outputToken.symbol)
+
+            var usdAmount = usdPrice * outputAmount;
+            if (usdAmount > 0) {
+              usdAmount = `≈ $${this.round(usdPrice * outputAmount, 2)}`
             }
-            that.update({
+
+            this.update({
               conversionRate: conversionRate,
-              outputTokenUsd: outputusd,
+              outputAmount: outputAmount,
+              outputTokenUsd: usdAmount,
               swapDistribution: result[1]
             })
-          })
-        }
-        else{
-          this.update({
-              outputTokenUsd: "",
-              outputUsd: null
-          })
+
+          } else {
+            this.update({
+              outputAmount: 0,
+              outputTokenUsd: 0
+            })
+          }
         }
       },
 
-      updateInputAmount(e) {
-        this.inputAmountParse(e.target.value)
+      async updateInputAmount(e) {
+        let token = this.state.inputToken
+        token.amount = e.target.value
+
+        let amounts = await this.amountParse(token)
+
+        this.update( {inputAmount: amounts.amount, inputTokenUsd: amounts.amountUsd})
       },
 
-      balanceClickInputAmount(){
-        this.inputAmountParse(this.state.inputToken.balance)
+      async updateOutputAmount(e) {
+        let token = this.state.outputToken
+        token.amount = e.target.value
+
+        let amounts = await this.amountParse(token)
+
+        this.update( {outputAmount: amounts.amount, outputTokenUsd: amounts.amountUsd})
       },
 
-      async inputAmountParse(val){
-        let input = isNaN(val) ? 0 : parseFloat(val)
-        input = isNaN(input) ? 0 : input
+      async balanceClickInputAmount(){
 
-        var inputusd = ''
-        if (this.state.inputUsd === null)
-        {
-          this.state.inputUsd = await this.getTokenUsdPrice(this.state.inputToken);
-        }
+        let token = this.state.inputToken
+        token.amount = this.state.inputToken.balance
 
-        if (this.state.inputUsd * input > 0){
-            inputusd = `≈ $${this.round(this.state.inputUsd * input, 2)}`
+        let amounts = await this.amountParse(token)
+
+        this.state.inputAmount = amounts.amount
+        this.state.inputTokenUsd = amounts.amountUsd
+      },
+
+      async amountParse(token){
+        let amountUsd = token.amountUsd
+        let amount = isNaN(token.amount) ? 0 : parseFloat(token.amount)
+        amount = isNaN(amount) ? 0 : amount
+
+        let priceUsd = await getTokenUsdPrice(token.address, token.symbol);
+
+        if (priceUsd * amount > 0){
+            amountUsd = `≈ $${this.round(priceUsd * amount, 2)}`
           }
 
-        this.update({inputAmount: input, inputTokenUsd: inputusd})
-      },
-
-      async getTokenUsdPrice(token) {
-        if (token === null){
-          return 0
-        }
-        var apiurl=""
-        if (token.symbol.toLowerCase() === 'eth'){
-          apiurl ="https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false"
-        }
-        else{
-          apiurl = `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${token.address}&vs_currencies=usd`
-        }
-        var res = await fetch(apiurl, {
-          method: "GET"
-        })
-
-        var jsonRes = await res.json()
-
-        if (token.symbol.toLowerCase() === 'eth'){
-          return jsonRes["ethereum"].usd
-        }
-        if (typeof jsonRes[`${token.address.toLowerCase()}`] === undefined){
-          return 0
-        }
-        return jsonRes[`${token.address.toLowerCase()}`].usd
+        return {amount: amount, amountUsd: amountUsd}
       },
 
       isOutputDefined() {
@@ -312,10 +302,13 @@
       },
 
       outputAmount() {
-        if(this.canOutput() && this.state.conversionRate !== undefined) {
+        if (this.state.isLimitOrder) {
+          return this.round(this.state.outputAmount, 4)
+        }
+        else if(this.canOutput() && this.state.conversionRate !== undefined) {
           return this.round(this.state.inputAmount * this.state.conversionRate, 4)
         } else {
-          return null
+          return 0
         }
       },
 
@@ -327,21 +320,19 @@
         return this.state.outputToken ? this.state.outputToken.symbol : "SELECT TOKEN ˅"
       },
 
-      loadApproval() {
-        if (this.state.inputToken !== undefined && this.state.inputToken !== null) {
-          if (this.state.inputToken.symbol !== "ETH") {
-            this.erc20Contract(this.state.inputToken.address).methods.allowance(this.accountAddress(), this.config.oneSplitAddress).call().then((allowance) => {
-              var approved = (allowance > 1000000000000000000000000000)
-              this.update({ isApproved: approved })
-            })
+      async loadApproval() {
+
+        if (this.state.inputToken !== undefined && this.state.inputToken !== null && this.state.inputAmount > 0) {
+          if (this.state.isLimitOrder) {
+            this.update({ isApproved: await ZeroXOrdersProxy.is0xApprovedForToken(this.state.inputToken.address, this.state.inputAmount * (10 ** this.state.inputToken.decimals)) })
           } else {
-            this.update({ isApproved: true })
+            this.update({ isApproved: await OneSplitContactProxy.isOneSplitApprovedForTokenAddress(this.state.inputToken.address, this.state.inputAmount * (10 ** this.state.inputToken.decimals)) })
           }
         }
 
-        var that = this
-        setTimeout(function () {
-          that.loadApproval()
+        let that = this
+        setTimeout(async function () {
+          await that.loadApproval()
         }, 3000)
       },
 
@@ -365,48 +356,87 @@
         return "APPROVE"
       },
 
-      sendApproveToken() {
-        this.erc20Contract(this.state.inputToken.address).methods.approve(this.config.oneSplitAddress, window.web3.utils.toBN("10000000000000000000000000000")).send({ from: this.accountAddress() })
-      },
-
-      buttonAction() {
+      async buttonAction() {
         if (!this.isWalletConnected()) {
-          this.connectWallet()
+          await this.connectWallet()
         } else {
           if (!this.state.isApproved) {
-            this.sendApproveToken()
-          }
+            if (this.state.isLimitOrder) {
+              await ZeroXOrdersProxy.approveZeroXAllowance(this.state.inputToken.address)
+            } else {
+              await OneSplitContactProxy.approveOneSplitForToken(this.state.inputToken.address)
+            }
+          } else if (this.state.inputToken && this.state.outputToken) {
+            if (this.state.isLimitOrder) {
+              let acceptedRejectedOrder = await ZeroXOrdersProxy.submitOrder({
+                makerAssetAmount: this.state.inputAmount * (10 ** this.state.inputToken.decimals),
+                makerAssetAddress: this.state.inputToken.address,
+                takerAssetAmount: this.state.outputAmount * (10 ** this.state.outputToken.decimals),
+                takerAssetAddress: this.state.outputToken.address
+              })
 
-          else if (this.state.inputToken && this.state.outputToken) {
-            this.sendSwap()
+              if (acceptedRejectedOrder.rejected.length !== 0) {
+                console.log("Order rejected: ", acceptedRejectedOrder.rejected[0].order)
+                console.log("Order rejected with message: ", acceptedRejectedOrder.rejected[0].message)
+              }
+
+            } else {
+              this.sendSwap()
+            }
           }
         }
       },
 
       async switchDirection() {
-        var inputToken = this.state.inputToken
-        var outputToken = this.state.outputToken
+        let inputToken = this.state.inputToken
+        let outputToken = this.state.outputToken
+
+        let inputAmount = this.state.inputAmount
+        let outputAmount = this.state.outputAmount
+
+        let inputTokenUsd = this.state.inputTokenUsd
+        let outputTokenUsd = this.state.outputTokenUsd
 
         this.update({
           inputToken: outputToken,
+          inputAmount: outputAmount,
+          inputTokenUsd: outputTokenUsd,
           outputToken: inputToken,
-          inputUsd : null,
-          outputUsd: null
+          outputAmount: inputAmount,
+          outputTokenUsd: inputTokenUsd
         })
 
-        this.inputAmountParse(this.state.inputAmount)
+        await this.inputAmountParse(this.state.inputAmount)
 
-        this.loadApproval()
+        await this.loadApproval()
+      },
+
+      async inputAmountParse(val){
+        let input = isNaN(val) ? 0 : parseFloat(val)
+        input = isNaN(input) ? 0 : input
+
+        let usdPrice = await getTokenUsdPrice(this.state.inputToken.address, this.state.inputToken.symbol);
+        let usdAmount = 0
+
+        if (usdPrice * input > 0){
+          usdAmount = `≈ $${this.round(usdPrice * input, 2)}`
+        }
+
+        this.update({inputAmount: input, inputTokenUsd: usdAmount})
       },
 
       switchToQuickSwap() {
-        this.state.isLimitOrder = false;
-        this.update();
+        this.switchOrderType(true)
       },
 
-      async switchToLimitOrder() {
-        this.state.isLimitOrder = true;
-        this.update();
+      switchToLimitOrder() {
+        this.switchOrderType(false)
+      },
+
+      switchOrderType(isSwap){
+        this.state.isLimitOrder = !isSwap
+        document.getElementById("output-token-field").disabled = isSwap
+        this.update()
       }
     }
   </script>
