@@ -4,8 +4,8 @@
         <div id="order-book-title">ORDER BOOK</div>
         <div id="order-table-canvas" onscroll={ disableScrollToView }>
             <table class="orders">
-                <thead class="order-book-columns" id="order-book-header">
-                <tr>
+                <thead class="order-book-columns">
+                <tr id="order-book-header">
                     <th>Price { props.outputToken.symbol }</th>
                     <th>Amount { props.inputToken.symbol }</th>
                     <th>Total { props.outputToken.symbol }</th>
@@ -13,15 +13,15 @@
                 </thead>
                 <tbody>
                 <tr each="{ask in state.asks}" class="ask">
-                    <td>{ ask.price.toFixed(3) }</td>
-                    <td>{ ask.volumeTaker.toFixed(3) }</td>
-                    <td>{ ask.volumeMaker.toFixed(3) }</td>
+                    <td>{ ask.price.toFixed(config.displayedDecimalPoints) }</td>
+                    <td>{ ask.volumeTaker.toFixed(config.displayedDecimalPoints) }</td>
+                    <td>{ ask.volumeMaker.toFixed(config.displayedDecimalPoints) }</td>
                 </tr>
                 <tr id="orders-separator"/>
                 <tr each="{bid in state.bids}" class="bid">
-                    <td>{ bid.price.toFixed(3) }</td>
-                    <td>{ bid.volumeTaker.toFixed(3) }</td>
-                    <td>{ bid.volumeMaker.toFixed(3) }</td>
+                    <td>{ bid.price.toFixed(config.displayedDecimalPoints) }</td>
+                    <td>{ bid.volumeTaker.toFixed(config.displayedDecimalPoints) }</td>
+                    <td>{ bid.volumeMaker.toFixed(config.displayedDecimalPoints) }</td>
                 </tr>
                 </tbody>
             </table>
@@ -34,10 +34,13 @@
         import { assetDataUtils } from '0x.js'
 
         export default {
+            config: {
+                displayedDecimalPoints: 3
+            },
             state: {
                 asks: [],
                 bids: [],
-                triggerScrollToView: false,
+                triggerScrollToView: true,
             },
             async onBeforeUpdate(props) {
 
@@ -128,7 +131,6 @@
                             .sort((a, b) => b.price - a.price)
 
                     this.state.triggerScrollToView = true
-
                 }
             },
 
@@ -144,8 +146,6 @@
                 if (elemTop > containerHeight) {
                     $(visibleOrderBookRegion).scrollTop(elemTop - containerHeight / 2);
                 }
-
-                this.state.triggerScrollToView = false
             }
         }
 

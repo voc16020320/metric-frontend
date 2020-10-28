@@ -47,7 +47,7 @@
           outputToken={ state.outputToken }
           conversionRate={ state.conversionRate }
           amount={ state.inputAmount }
-          metricBalance={ state.metricBalance }
+          metricBalance={ fetchMetricBalance() }
   />
 
   <order-book
@@ -57,7 +57,7 @@
   />
 
   <token-selector
-          if={ state.showTokenSelector }
+          style={ (state.showTokenSelector) ? "display:block" : "display:none" }
           closeTokenSelector={ closeTokenSelector }
           selectToken={ selectToken }
   />
@@ -71,6 +71,7 @@
     import { ZeroXOrdersProxy } from '../../common/0x_orders_proxy'
     import { OneSplitContactProxy } from '../../common/one_split_contract_proxy'
     import { Erc20ContractProxy } from '../../common/erc20_contract_proxy'
+    import { BigNumber } from '@0x/utils';
 
     export default {
 
@@ -81,19 +82,18 @@
       },
 
       config: {
-        isLimitOrder: false,
         referralAddress: "0x52427b0035F494a21a0A4A1AbE04d679f789c821", // build deployer
-        swapFee: (3000000000000000).toString()
+        swapFee: 0.003
       },
 
       state: {
+        isLimitOrder: false,
         isApproved: true,
         inputAmount: 0,
         outputAmount: 0,
         inputTokenUsd: 0,
         outputTokenUsd: 0,
         showTokenSelector: false,
-        metricToken: null,
         inputToken: null,
         outputToken: null
       },
@@ -103,11 +103,6 @@
         if (this.state.inputToken === null) {
           let token = this.tokensList().find(t => t.symbol.toLowerCase() === "eth")
           this.state.inputToken = token === undefined ? null : token
-        }
-
-        if (this.state.metricToken === null) {
-          let token = this.tokensList().find(t => t.symbol.toLowerCase() === "metric")
-          this.state.metricToken = token === undefined ? null : token
         }
 
         if (this.state.inputToken !== null) {
@@ -128,7 +123,6 @@
 
       onMounted() {
         this.updatePriceAndReschedule()
-        this.updateMetricBalanceAndReschedule()
       },
 
       openInputSelector() {
@@ -152,9 +146,7 @@
       async selectToken(token) {
 
         if (this.state.pendingTokenSelection === "input") {
-          this.update({ inputToken: token, inputUsd: 0 })
-
-          await this.inputAmountParse(this.state.inputAmount)
+          this.update({ inputToken: token, inputTokenUsd: 0, inputAmount: 0 })
         } else {
           this.update({ outputToken: token, outputTokenUsd: 0, outputAmount: 0 })
         }
@@ -163,19 +155,9 @@
         await this.loadApproval()
       },
 
-      updateMetricBalance() {
-        if (this.accountAddress() !== undefined && this.inputToken !== null) {
-          Erc20ContractProxy.erc20Contract(this.state.metricToken.address).methods.balanceOf(this.accountAddress()).call().then((balance) => {
-            const cleanedBalance = isNaN(balance) ? 0 : this.round(balance / (10 ** 18), 4);
-            this.update({ metricBalance: cleanedBalance })
-          })
-        }
-      },
-
       sendSwap() {
         var inputWei = (this.state.inputAmount * (10**this.state.inputToken.decimals)).toLocaleString("fullwide", { useGrouping: false })
         var ethAmount = (this.state.inputToken.symbol === "ETH") ? inputWei : 0
-        var swapFee = this.state.metricBalance >= 100 ? 0 : this.config.swapFee
 
         OneSplitContactProxy.oneSplitContract().methods.swapWithReferral(
           this.state.inputToken.address,
@@ -185,8 +167,19 @@
           this.state.swapDistribution,
           0,
           this.config.referralAddress,
-          swapFee
+          (this.calculateMetricFee() * (10 ** 18)).toString()
         ).send({ from: this.accountAddress(), value: ethAmount })
+      },
+
+      fetchMetricBalance() {
+
+        let metric = this.tokensList().find(t => t.symbol.toLowerCase() === "metric")
+
+        if (metric !== undefined) {
+          return metric.balance
+        }
+
+        return 0
       },
 
       async updatePriceAndReschedule() {
@@ -195,15 +188,6 @@
         setTimeout(async function () {
           await that.updatePriceAndReschedule()
         }, 1000)
-      },
-
-      updateMetricBalanceAndReschedule() {
-        this.updateMetricBalance()
-        let that = this
-
-        setTimeout(function () {
-          that.updateMetricBalanceAndReschedule()
-        }, 5000)
       },
 
       isOrderBookFeatureEnabled() {
@@ -247,6 +231,8 @@
               outputTokenUsd: 0
             })
           }
+        } else {
+          this.update()
         }
       },
 
@@ -254,43 +240,50 @@
         let token = this.state.inputToken
         token.amount = e.target.value
 
-        let amounts = await this.amountParse(token)
+        let amount = this.amountParse(token)
+        this.update( {inputAmount: amount})
 
-        this.update( {inputAmount: amounts.amount, inputTokenUsd: amounts.amountUsd})
+        let amountUsd = await this.amountConvertToUsd(token, amount)
+        this.update( {inputTokenUsd: amountUsd})
       },
 
       async updateOutputAmount(e) {
         let token = this.state.outputToken
         token.amount = e.target.value
 
-        let amounts = await this.amountParse(token)
+        let amount = this.amountParse(token)
+        this.update( {outputAmount: amount})
 
-        this.update( {outputAmount: amounts.amount, outputTokenUsd: amounts.amountUsd})
+        let amountUsd = await this.amountConvertToUsd(token, amount)
+        this.update( {outputTokenUsd: amountUsd})
       },
 
       async balanceClickInputAmount(){
-
         let token = this.state.inputToken
         token.amount = this.state.inputToken.balance
 
-        let amounts = await this.amountParse(token)
+        let amount = this.amountParse(token)
+        this.update( {inputAmount: amount})
 
-        this.state.inputAmount = amounts.amount
-        this.state.inputTokenUsd = amounts.amountUsd
+        let amountUsd = await this.amountConvertToUsd(token, amount)
+        this.update( {inputTokenUsd: amountUsd})
       },
 
-      async amountParse(token){
+      amountParse(token){
         let amountUsd = token.amountUsd
         let amount = isNaN(token.amount) ? 0 : parseFloat(token.amount)
-        amount = isNaN(amount) ? 0 : amount
+        return isNaN(amount) ? 0 : amount
+      },
 
+      async amountConvertToUsd(token, amount){
+        let amountUsd = token.amountUsd
         let priceUsd = await getTokenUsdPrice(token.address, token.symbol);
 
         if (priceUsd * amount > 0){
-            amountUsd = `≈ $${this.round(priceUsd * amount, 2)}`
-          }
+          amountUsd = `≈ $${this.round(priceUsd * amount, 2)}`
+        }
 
-        return {amount: amount, amountUsd: amountUsd}
+        return amountUsd
       },
 
       isOutputDefined() {
@@ -322,7 +315,7 @@
 
       async loadApproval() {
 
-        if (this.state.inputToken !== undefined && this.state.inputToken !== null && this.state.inputAmount > 0) {
+        if (this.state.inputToken !== undefined && this.state.inputAmount > 0) {
           if (this.state.isLimitOrder) {
             this.update({ isApproved: await ZeroXOrdersProxy.is0xApprovedForToken(this.state.inputToken.address, this.state.inputAmount * (10 ** this.state.inputToken.decimals)) })
           } else {
@@ -331,8 +324,8 @@
         }
 
         let that = this
-        setTimeout(async function () {
-          await that.loadApproval()
+        setTimeout(function () {
+          that.loadApproval()
         }, 3000)
       },
 
@@ -368,18 +361,16 @@
             }
           } else if (this.state.inputToken && this.state.outputToken) {
             if (this.state.isLimitOrder) {
-              let acceptedRejectedOrder = await ZeroXOrdersProxy.submitOrder({
-                makerAssetAmount: this.state.inputAmount * (10 ** this.state.inputToken.decimals),
-                makerAssetAddress: this.state.inputToken.address,
-                takerAssetAmount: this.state.outputAmount * (10 ** this.state.outputToken.decimals),
-                takerAssetAddress: this.state.outputToken.address
-              })
-
-              if (acceptedRejectedOrder.rejected.length !== 0) {
-                console.log("Order rejected: ", acceptedRejectedOrder.rejected[0].order)
-                console.log("Order rejected with message: ", acceptedRejectedOrder.rejected[0].message)
-              }
-
+              await ZeroXOrdersProxy.submitOrder(
+                {
+                  makerAssetAmount: new BigNumber(this.state.inputAmount * (10 ** this.state.inputToken.decimals)),
+                  makerAssetAddress: this.state.inputToken.address,
+                  takerAssetAmount: new BigNumber(this.state.outputAmount * (10 ** this.state.outputToken.decimals)),
+                  takerAssetAddress: this.state.outputToken.address
+                },
+                this.config.referralAddress,
+                this.calculateMetricFee()
+              )
             } else {
               this.sendSwap()
             }
@@ -406,23 +397,7 @@
           outputTokenUsd: inputTokenUsd
         })
 
-        await this.inputAmountParse(this.state.inputAmount)
-
         await this.loadApproval()
-      },
-
-      async inputAmountParse(val){
-        let input = isNaN(val) ? 0 : parseFloat(val)
-        input = isNaN(input) ? 0 : input
-
-        let usdPrice = await getTokenUsdPrice(this.state.inputToken.address, this.state.inputToken.symbol);
-        let usdAmount = 0
-
-        if (usdPrice * input > 0){
-          usdAmount = `≈ $${this.round(usdPrice * input, 2)}`
-        }
-
-        this.update({inputAmount: input, inputTokenUsd: usdAmount})
       },
 
       switchToQuickSwap() {
@@ -437,6 +412,9 @@
         this.state.isLimitOrder = !isSwap
         document.getElementById("output-token-field").disabled = isSwap
         this.update()
+      },
+      calculateMetricFee() {
+        return this.fetchMetricBalance() >= 100 ? 0 : this.config.swapFee
       }
     }
   </script>

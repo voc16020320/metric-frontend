@@ -28,8 +28,33 @@ let tokens = [
 
 export function tokensList() { return tokens }
 
-export function addToken(token) {
-    tokens.push(token)
+export async function fetchTokensBalances() {
+
+    await Promise.all(
+        tokens.map(async (t, index) => {
+            let token = t
+            token.balance = await fetchTokenBalance(token)
+            tokens[index] = token
+        })
+    )
+
+    setTimeout(fetchTokensBalances, 10000)
+}
+
+async function fetchTokenBalance(token) {
+
+    let tokenBalance = 0
+
+    if (token.symbol.toLowerCase() === "eth") {
+        tokenBalance = await window.web3.eth.getBalance(accountAddress())
+    } else {
+        let contract = Erc20ContractProxy.erc20Contract(token.address)
+        tokenBalance = await contract.methods.balanceOf(accountAddress()).call()
+    }
+
+    tokenBalance = isNaN(tokenBalance) ? 0 : tokenBalance / (10**token.decimals)
+
+    return tokenBalance
 }
 
 export async function loadTokenList(observer)
@@ -62,29 +87,6 @@ export async function loadTokenList(observer)
     observer.update()
 }
 
-export async function fetchTokensBalances() {
-
-    await Promise.all(
-        tokens.map(async (t, index) => {
-            let token = t
-            token.balance = await fetchTokenBalance(token)
-            tokens[index] = token
-        })
-    )
-}
-
-async function fetchTokenBalance(token) {
-
-    let tokenBalance = 0
-
-    if (token.symbol.toLowerCase() === "eth") {
-        tokenBalance = await window.web3.eth.getBalance(accountAddress())
-    } else {
-        let contract = Erc20ContractProxy.erc20Contract(token.address)
-        tokenBalance = await contract.methods.balanceOf(accountAddress()).call()
-    }
-
-    tokenBalance = isNaN(tokenBalance) ? 0 : tokenBalance / (10**token.decimals)
-
-    return tokenBalance
+export function addToken(token) {
+    tokens.push(token)
 }
