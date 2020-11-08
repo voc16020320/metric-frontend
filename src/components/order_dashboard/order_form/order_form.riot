@@ -67,8 +67,8 @@
             state: {
                 inputToken: null,
                 outputToken: null,
-                amount: 0,
-                price: 0,
+                amount: NaN,
+                price: NaN,
                 isOutputTokenApproved: false,
                 isInputTokenApproved: false,
                 showTokenSelector: false
@@ -104,13 +104,11 @@
                 this.closeTokenSelector()
             },
             updateAmount(e) {
-                let amount = parseFloat(e.target.value)
-                this.update({ amount: isNaN(amount) ? 0 : amount })
+                this.update({ amount: parseFloat(e.target.value) })
                 this.updateSubmitButtonState()
             },
             updatePrice(e) {
-                let price = parseFloat(e.target.value)
-                this.update({ price: isNaN(price) ? 0 : price })
+                this.update({ price: parseFloat(e.target.value) })
                 this.updateSubmitButtonState()
             },
             updateSubmitButtonState() {
@@ -177,7 +175,8 @@
                 return this.state.amount * (10 ** this.state.inputToken.decimals)
             },
             outputAmount() {
-                return this.inputAmount() * this.state.price
+                let amount = this.inputAmount()
+                return (isNaN(amount) ? 0 : amount) * (isNaN(this.state.price) ? 0 : this.state.price)
             },
             formattedTotalAmount() {
                 return ((this.outputAmount() + this.feeAmount()) / (10 ** this.state.outputToken.decimals)).toFixed(3)
@@ -186,7 +185,8 @@
                 return (this.feeAmount() / (10 ** this.state.outputToken.decimals)).toFixed(3)
             },
             feeAmount() {
-                return this.outputAmount() * calculateMetricFee()
+                let amount = this.outputAmount()
+                return (isNaN(amount) ? 0 : amount) * calculateMetricFee()
             },
             isBuyOrder() {
                 return this.state.orderType === this.config.buyOrderType
@@ -209,14 +209,18 @@
                 }
             },
             placeOrderMessage() {
-                if (this.isValidOrder()) {
+                if (!this.isValidInputs() || this.isValidOrder()) {
                     return "PLACE ORDER"
                 } else {
                     return `MUST BE >${this.state.outputToken.volume_limit} ${this.state.outputToken.symbol}`
                 }
             },
             isValidOrder() {
-                return (this.outputAmount() / (10 ** this.state.outputToken.decimals)) > this.state.outputToken.volume_limit
+                let isAmountAboveThreshold = (this.outputAmount() / (10 ** this.state.outputToken.decimals)) > this.state.outputToken.volume_limit
+                return this.isValidInputs() && isAmountAboveThreshold
+            },
+            isValidInputs() {
+                return !isNaN(this.state.price) && !isNaN(this.state.amount)
             }
         }
 
