@@ -2,21 +2,30 @@
     <div class="theme-switch-line">Dark mode</div>
     <div class="theme-switch-line">
         <div class="theme-switch-line-group">
-            <a href="#" class={ this.isDarkThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ this.setDarkTheme }>
+            <a href="#" class={ this.isDarkThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ toggleDarkTheme }>
                 On
             </a>
-            <a href="#" class={ this.isLightThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ this.setLightTheme }>
+            <a href="#" class={ this.isLightThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ toggleLightTheme }>
                 Off
             </a>
         </div>
     </div>
     <script>
         import './theme-switch.css'
+        import {setDarkTheme, setLightTheme} from "../../../common/theme_manager";
 
         export default {
             state: {},
             onMounted() {
                 this.initTheme()
+            },
+            toggleDarkTheme() {
+                setDarkTheme()
+                this.update()
+            },
+            toggleLightTheme() {
+                setLightTheme()
+                this.update()
             }
         }
     </script>

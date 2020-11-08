@@ -4,7 +4,7 @@ import { component, install } from 'riot'
 import jquery from "jquery";
 import { loadTokenList, fetchTokensBalances, addToken } from "./common/token_fetch";
 import { accountAddress, initWeb3, connectWallet, updateAccountAddress, isWalletConnected } from './common/wallet_manager'
-import { setDarkTheme, setLightTheme, isDarkThemeSet, isLightThemeSet, initTheme } from './common/theme_manager'
+import { isDarkThemeSet, isLightThemeSet, initTheme } from './common/theme_manager'
 
 export default (window.$ = window.jQuery = jquery);
 
@@ -28,8 +28,6 @@ install(c => {
 
     c.isDarkThemeSet = isDarkThemeSet
     c.isLightThemeSet = isLightThemeSet
-    c.setDarkTheme = setDarkTheme
-    c.setLightTheme = setLightTheme
     c.initTheme = initTheme
 
 })
