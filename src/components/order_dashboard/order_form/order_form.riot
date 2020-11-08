@@ -1,0 +1,224 @@
+<order-form>
+
+    <div class="order-form">
+
+        <div class="order-line token-selector button clickable-button" onclick={ openTokenSelector }>{ state.inputToken.symbol } ˅</div>
+
+        <div class="order-line order-buttons">
+            <div id="buy-button" class="buy-button button clickable-button" onclick={ setBuyOrderType }>Buy</div>
+            <div id="sell-button" class="sell-button button clickable-button" onclick={ setSellOrderType }>Sell</div>
+        </div>
+
+        <div class="order-line">Amount</div>
+        <div class="order-line order-input">
+            <input type="number" onkeyup={ updateAmount } placeholder="0"/>
+            <label>{ state.inputToken.symbol }</label>
+        </div>
+
+        <div class="order-line">Price</div>
+        <div class="order-line order-input">
+            <input type="number" onkeyup={ updatePrice } placeholder="0"/>
+            <label>{ state.outputToken.symbol }</label>
+        </div>
+
+        <div class="order-line order-info">
+            <div>Fee</div>
+            <label>{ formattedFeeAmount() } { state.outputToken.symbol }</label>
+        </div>
+        <div class="order-line order-info">
+            <div>Total</div>
+            <label>{ formattedTotalAmount() } { state.outputToken.symbol }</label>
+        </div>
+
+        <div id ="place-order-button" class="order-line button">
+            { placeOrderMessage() }
+        </div>
+
+        <div id="token-selector-box" style="display:none" }>
+            <token-selector
+                    closeTokenSelector={ closeTokenSelector }
+                    selectToken={ selectToken }
+            />
+        </div>
+
+    </div>
+
+    <script>
+
+        import './order_form.css'
+        import TokenSelector from '../../token_selector/token_selector.riot'
+        import {tokensList} from "../../../common/token_fetch";
+        import {
+            setBaseToken,
+            setQuoteToken
+        } from "../../../common/0x_order_book_proxy";
+        import {ZeroXOrdersProxy} from "../../../common/0x_orders_proxy";
+        import { BigNumber } from '@0x/utils';
+        import {calculateMetricFee, MetricReferralAddress} from "../../../common/metric_fee";
+
+        export default {
+            components: {
+                TokenSelector
+            },
+            config: {
+                buyOrderType: "BUY",
+                sellOrderType: "SELL"
+            },
+            state: {
+                inputToken: null,
+                outputToken: null,
+                amount: 0,
+                price: 0,
+                isOutputTokenApproved: false,
+                isInputTokenApproved: false,
+                showTokenSelector: false
+            },
+            onBeforeMount() {
+                this.state.orderType = this.config.buyOrderType
+
+                this.state.inputToken =
+                    tokensList().find(t => t.symbol.toLowerCase() === "metric")
+
+                this.state.outputToken =
+                    tokensList().find(t => t.symbol.toLowerCase() === "dai")
+
+                setBaseToken(this.state.inputToken)
+                setQuoteToken(this.state.outputToken)
+            },
+            onMounted() {
+                this.setBuyOrderType()
+            },
+            closeTokenSelector() {
+                document.getElementById("token-selector-box").style.display = "none"
+            },
+            openTokenSelector() {
+                document.getElementById("token-selector-box").style.display = "block"
+            },
+            async selectToken(token) {
+
+                setBaseToken(token)
+
+                this.update({ inputToken: token })
+
+                this.closeTokenSelector()
+            },
+            updateAmount(e) {
+                let amount = parseFloat(e.target.value)
+                this.update({ amount: isNaN(amount) ? 0 : amount })
+                this.updateSubmitButtonState()
+            },
+            updatePrice(e) {
+                let price = parseFloat(e.target.value)
+                this.update({ price: isNaN(price) ? 0 : price })
+                this.updateSubmitButtonState()
+            },
+            updateSubmitButtonState() {
+                let button = document.getElementById("place-order-button")
+                if (!this.isValidOrder()) {
+                    button.classList.remove("active-button")
+                    button.classList.remove("clickable-button")
+                    button.onclick = null
+                } else if (this.isValidOrder() && !button.classList.contains("active-button")) {
+                    button.classList.add("active-button")
+                    button.classList.add("clickable-button")
+                    button.onclick = this.checkApprovalAndSubmitOrder
+                }
+            },
+            async setBuyOrderType() {
+                this.state.orderType = this.config.buyOrderType
+                document.getElementById("sell-button").classList.remove("active-button")
+                document.getElementById("buy-button").classList.remove("active-button")
+                document.getElementById("buy-button").classList.add("active-button")
+            },
+            async setSellOrderType() {
+                this.state.orderType = this.config.sellOrderType
+                document.getElementById("sell-button").classList.remove("active-button")
+                document.getElementById("buy-button").classList.remove("active-button")
+                document.getElementById("sell-button").classList.add("active-button")
+            },
+            async checkApprovalAndSubmitOrder() {
+                let isApproved = await this.isApproved()
+
+                if (!isApproved) {
+                    await this.requestApproval()
+                    isApproved = await this.isApproved()
+                }
+
+                if (isApproved) {
+                    await ZeroXOrdersProxy.submitOrder(
+                        this.buildOrder(),
+                        MetricReferralAddress,
+                        calculateMetricFee()
+                    )
+                }
+            },
+            buildOrder() {
+                let inputAmount = this.inputAmount()
+                let outputAmount = this.outputAmount()
+
+                if (this.isSellOrder()) {
+                    return {
+                        makerAssetAmount: new BigNumber(inputAmount),
+                        makerAssetAddress: this.state.inputToken.address,
+                        takerAssetAmount: new BigNumber(outputAmount),
+                        takerAssetAddress: this.state.outputToken.address
+                    }
+                } else {
+                    return {
+                        makerAssetAmount: new BigNumber(outputAmount),
+                        makerAssetAddress: this.state.outputToken.address,
+                        takerAssetAmount: new BigNumber(inputAmount),
+                        takerAssetAddress: this.state.inputToken.address
+                    }
+                }
+            },
+            inputAmount() {
+                return this.state.amount * (10 ** this.state.inputToken.decimals)
+            },
+            outputAmount() {
+                return this.inputAmount() * this.state.price
+            },
+            formattedTotalAmount() {
+                return ((this.outputAmount() + this.feeAmount()) / (10 ** this.state.outputToken.decimals)).toFixed(3)
+            },
+            formattedFeeAmount() {
+                return (this.feeAmount() / (10 ** this.state.outputToken.decimals)).toFixed(3)
+            },
+            feeAmount() {
+                return this.outputAmount() * calculateMetricFee()
+            },
+            isBuyOrder() {
+                return this.state.orderType === this.config.buyOrderType
+            },
+            isSellOrder() {
+                return this.state.orderType === this.config.sellOrderType
+            },
+            async isApproved() {
+                if (this.isBuyOrder()) {
+                    return await ZeroXOrdersProxy.is0xApprovedForToken(this.state.outputToken.address, this.outputAmount())
+                } else {
+                    return await ZeroXOrdersProxy.is0xApprovedForToken(this.state.inputToken.address, this.inputAmount())
+                }
+            },
+            async requestApproval() {
+                if (this.isBuyOrder()) {
+                    await ZeroXOrdersProxy.approveZeroXAllowance(this.state.outputToken.address)
+                } else {
+                    await ZeroXOrdersProxy.approveZeroXAllowance(this.state.inputToken.address)
+                }
+            },
+            placeOrderMessage() {
+                if (this.isValidOrder()) {
+                    return "PLACE ORDER"
+                } else {
+                    return `MUST BE >${this.state.outputToken.volume_limit} ${this.state.outputToken.symbol}`
+                }
+            },
+            isValidOrder() {
+                return (this.outputAmount() / (10 ** this.state.outputToken.decimals)) > this.state.outputToken.volume_limit
+            }
+        }
+
+    </script>
+
+</order-form>

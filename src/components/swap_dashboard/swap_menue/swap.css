@@ -1,13 +1,12 @@
-@import '../theme_colors/colors.css';
+@import '../../theme_colors/colors.css';
 
-#swap-form {
+.swap-form {
   margin: 0 auto;
   margin-top: 150px;
-  border-radius: 5px;
   width: 340px;
+  border-radius: 10px;
   padding: 30px;
   background: var(--swap-form-background-color);
-  border: 1px solid var(--swap-from-border-color);
   box-shadow: 0 1px 5px 1px rgba(0, 0, 0, 0.05);
 }
 
@@ -107,6 +106,21 @@ input[type=number] {
 
 .selector-hidden {
   display: none;
+}
+
+.swap-box {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  margin-left: -200px;
+  width: 342px;
+  height: 620px;
+  background: var(--swap-form-background-color);
+  border-radius: 10px;
+  color: var(--token-selector-box-text-color)  ;
+  padding-left: 30px ;
+  padding-right: 30px ;
+  padding-top: 30px;
 }
 
 

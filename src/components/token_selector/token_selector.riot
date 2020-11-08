@@ -1,20 +1,18 @@
 <token-selector>
 
     <div id="token-selector">
-        <div class="box">
-            <div class="wrapper">
-                <div class="close"><img src={ config.closeImage } onclick={ this.cleanUpAndClose }></div>
-                <input type="text" placeholder="Search symbol or paste address" oninput={ filterTokenSearch }>
-            </div>
-            <div class="tokens">
-                <table>
-                    <tr each={ token in state.filteredTokens } key={ token.symbol } onclick={ fetchTokenInfo }>
-                        <td class="img"><img src="{ fetchTokenLogoURI(token) }" alt=" " onerror={ changeLogoToDefault }></td>
-                        <td class="symbol">{ token.symbol }</td>
-                        <td class="balance">{ this.round(token.balance, 4) }</td>
-                    </tr>
-                </table>
-            </div>
+        <div class="wrapper">
+            <div class="close"><img src={ config.closeImage } onclick={ this.cleanUpAndClose }></div>
+            <input type="text" placeholder="Search symbol or paste address" oninput={ filterTokenSearch }>
+        </div>
+        <div class="tokens">
+            <table>
+                <tr id="token-{ token.symbol }" each={ token in state.sortedTokens } key={ token.symbol } onclick={ fetchTokenInfo }>
+                    <td class="img"><img src="{ fetchTokenLogoURI(token) }" alt=" " onerror={ changeLogoToDefault }></td>
+                    <td class="symbol">{ token.symbol }</td>
+                    <td class="balance">{ this.round(token.balance, 4) }</td>
+                </tr>
+            </table>
         </div>
     </div>
 
@@ -25,29 +23,36 @@
         import UnknownTokenDarkImage from './unknown-token-dark.svg'
         import './token_selector.css'
         import { Erc20ContractProxy } from '../../common/erc20_contract_proxy'
+        import {registerForTokenListUpdate, tokensList} from "../../common/token_fetch";
+        import {registerForThemeUpdates} from "../../common/theme_manager";
 
         export default {
             config: {
                 closeImage: Image
             },
             state: {
-                filteredTokens: [],
+                sortedTokens: [],
                 addressRegEx: new RegExp("0x[0-9a-zA-Z]{40}")
+            },
+            async onBeforeMount() {
+                await this.buildSortedTokenList(null)
             },
             onMounted() {
                 document.addEventListener('click', this.listenToSelectorCloseClick)
+                registerForThemeUpdates(this)
+                registerForTokenListUpdate(this)
+                this.updateTheme()
             },
-            async onBeforeUpdate() {
-                await this.buildFilteredTokenList()
-            },
-            changeLogoToDefault(e) {
-                e.target.setAttribute("src", this.defaultTokenLogo())
+            async onTokenListUpdate() {
+                await this.filterTokenSearch()
+                this.update()
             },
             listenToSelectorCloseClick(e) {
                 let selector = document.getElementById('token-selector');
                 let swap = document.getElementById('swap-form');
 
-                if (selector !== null && !selector.contains(e.target) && !swap.contains(e.target)) {
+                if (selector !== null && !selector.contains(e.target) &&
+                    swap !== null && !swap.contains(e.target)) {
                     this.cleanUpAndClose();
                 }
             },
@@ -57,40 +62,30 @@
             },
             clearFilter() {
                 this.$("#token-selector input").value = null
+                this.filterTokenSearch()
+                this.update()
             },
             fetchTokenInfo(e) {
                 let symbol = e.target.parentElement.cells[1].textContent
 
-                let tokenData = {
-                  symbol: symbol,
-                  address: this.tokenBySymbol(symbol).address,
-                  decimals: this.tokenBySymbol(symbol).decimals,
-                  balance: this.tokenBySymbol(symbol).balance,
-                }
+                let tokenData = tokensList().find(t => t.symbol === symbol)
 
                 this.props.selectToken(tokenData)
                 this.clearFilter()
             },
-            tokenBySymbol(symbol) {
-              return this.tokensList().filter(function(x) {
-                 return x.symbol.toLowerCase() === symbol.toLowerCase()
-              })[0]
-            },
-            filterTokenSearch() {
-                this.buildFilteredTokenList()
-                this.update()
-            },
-            async buildFilteredTokenList() {
-                let that = this
+            async filterTokenSearch() {
                 let filter = this.$("#token-selector input").value.toLowerCase()
 
                 if (filter !== null && filter.length === 0) {
                     filter = null
                 }
-
+                await this.buildSortedTokenList(filter)
+                this.filterTokens(filter)
+            },
+            async buildSortedTokenList(filter) {
                 if (filter !== null &&
                     filter.match(this.state.addressRegEx) &&
-                    this.tokensList().findIndex(t => t.address.toLowerCase() === filter) === -1) {
+                    tokensList().findIndex(t => t.address.toLowerCase() === filter) === -1) {
 
                     let token = { address: filter }
                     let contract = Erc20ContractProxy.getContract(filter)
@@ -99,19 +94,31 @@
                     token.decimals = await contract.methods.decimals().call().then(s => parseInt(s))
                     token.balance =
                         await contract.methods.balanceOf(this.accountAddress()).call().then(s => parseInt(s)) / (10**token.decimals)
-
+                    token.volume_limit = -1
                     this.addToken(token)
                 }
-
-                this.state.filteredTokens =
-                    this.sortTokens(
-                        this.tokensList().filter(function(x) {
+                this.state.sortedTokens = this.sortTokens(tokensList().filter(t => !t.disabled), filter)
+            },
+            filterTokens(filter) {
+                let that = this
+                let tokens =
+                    this.state.sortedTokens
+                        .filter(function(x) {
                             return filter == null ||
                                 x.symbol.toLowerCase().includes(filter) ||
                                 (filter.match(that.state.addressRegEx) && x.address.toLowerCase().includes(filter))
-                        }),
-                        filter
-                    )
+                        })
+
+                tokensList().forEach(t => {
+                    let tr = document.getElementById(`token-${t.symbol}`)
+                    if (tr !== null) {
+                        if (tokens.find(tt => tt.symbol === t.symbol) === undefined) {
+                            tr.style.display = 'none'
+                        } else {
+                            tr.style.display = null
+                        }
+                    }
+                })
             },
             sortTokens(tokens, value) {
                 let that = this
@@ -139,6 +146,16 @@
                     return UnknownTokenLightImage
                 } else {
                     return UnknownTokenDarkImage
+                }
+            },
+            changeLogoToDefault(e) {
+                e.target.setAttribute("src", this.defaultTokenLogo())
+                e.target.classList.add("token-with-default-logo")
+            },
+            updateTheme() {
+                let tokensWithNoLogo = document.getElementsByClassName("token-with-default-logo")
+                for (let i = 0; i < tokensWithNoLogo.length; i++) {
+                    tokensWithNoLogo[i].setAttribute("src", this.defaultTokenLogo())
                 }
             }
         }

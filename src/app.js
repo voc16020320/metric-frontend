@@ -2,7 +2,7 @@ import "@babel/polyfill";
 import '@riotjs/hot-reload'
 import { component, install } from 'riot'
 import jquery from "jquery";
-import { tokensList, loadTokenList, fetchTokensBalances, addToken } from "./common/token_fetch";
+import { loadTokenList, fetchTokensBalances, addToken } from "./common/token_fetch";
 import { accountAddress, initWeb3, connectWallet, updateAccountAddress, isWalletConnected } from './common/wallet_manager'
 import { setDarkTheme, setLightTheme, isDarkThemeSet, isLightThemeSet, initTheme } from './common/theme_manager'
 
@@ -21,7 +21,6 @@ install(c => {
     c.connectWallet = connectWallet
     c.updateAccountAddress = updateAccountAddress
 
-    c.tokensList = tokensList
     c.addToken = addToken
     c.loadTokenList = loadTokenList
     c.fetchTokensBalances = fetchTokensBalances

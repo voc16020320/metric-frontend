@@ -1,4 +1,8 @@
 
+export function registerForThemeUpdates(callback) {
+    registeredCallback.push(callback)
+}
+
 export function initTheme() {
     if (isDarkThemeSet()) {
         document.documentElement.setAttribute('data-theme', darkTheme());
@@ -30,6 +34,7 @@ function getTheme() {
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
+    registeredCallback.forEach(item => item.updateTheme())
 }
 
 function darkTheme() {
@@ -39,3 +44,5 @@ function darkTheme() {
 function lightTheme() {
     return 'light'
 }
+
+let registeredCallback = []

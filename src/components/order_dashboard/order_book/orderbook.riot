@@ -1,0 +1,182 @@
+<order-book>
+    <loader class="order-book-loader" if={ state.isLoadingOrders }/>
+    <div id="order-table-canvas" onscroll={ disableScrollToView } if={ !state.isLoadingOrders }>
+        <table class="orders">
+            <thead class="order-book-columns">
+            <tr id="order-book-header">
+                <th>Amount { state.inputToken.symbol }</th>
+                <th>Price { state.outputToken.symbol }</th>
+                <th>Total { state.outputToken.symbol }</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr each={ask in state.asks} class="ask">
+                <td>{ ask.volumeTaker.toFixed(config.displayedDecimalPoints) }</td>
+                <td>{ ask.price }</td>
+                <td>{ ask.volumeMaker.toFixed(config.displayedDecimalPoints) }</td>
+            </tr>
+            <tr id="orders-separator">
+                <td></td>
+                <td>{ state.midMarketPrice }</td>
+                <td></td>
+            </tr>
+            <tr each={bid in state.bids} class="bid">
+                <td>{ bid.volumeTaker.toFixed(config.displayedDecimalPoints) }</td>
+                <td>{ bid.price }</td>
+                <td>{ bid.volumeMaker.toFixed(config.displayedDecimalPoints) }</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        import './orderbook.css'
+        import Loader from '../../loader/loader.riot'
+
+        import {
+            getBaseToken,
+            getOrderBookAsks,
+            getOrderBookBids, getQuoteToken, registerForBaseTokenChange,
+            registerForOrderBookUpdateEvents
+        } from "../../../common/0x_order_book_proxy";
+
+        import {BigNumber} from '@0x/utils';
+        import {getTokenUsdPrice} from "../../../common/token_price_proxy";
+
+        export default {
+            components: {
+                Loader
+            },
+            config: {
+                displayedDecimalPoints: 3
+            },
+            state: {
+                asks: [],
+                bids: [],
+                midMarketPrice: null,
+                triggerScrollToView: true,
+                isLoadingOrders: true
+            },
+            onBeforeMount() {
+                this.state.inputToken = getBaseToken()
+                this.state.outputToken = getQuoteToken()
+            },
+            onMounted() {
+                registerForBaseTokenChange(this)
+                registerForOrderBookUpdateEvents(this)
+            },
+            onBaseTokenUpdate() {
+                this.update({
+                    isLoadingOrders: true
+                });
+            },
+            async onOrderBookUpdate() {
+                this.state.inputToken = getBaseToken()
+                this.state.outputToken = getQuoteToken()
+
+                await this.fetchOrderBook(this.state.inputToken, this.state.outputToken)
+            },
+            onUpdated() {
+                if (this.state.triggerScrollToView && !this.state.isLoadingOrders) {
+                    this.scrollOrderBookIntoView()
+                }
+            },
+            disableScrollToView() {
+                this.state.triggerScrollToView = false
+            },
+            async fetchOrderBook(inputToken, outputToken) {
+                if (inputToken !== null && outputToken !== null) {
+
+                    let asks =
+                        getOrderBookAsks().map(b => {
+
+                            let makerAmount = b.order.makerAssetAmount.dividedBy(10 ** inputToken.decimals)
+                            let takerAmount = b.order.takerAssetAmount.dividedBy(10 ** outputToken.decimals)
+                            let remainingTakerAmount = new BigNumber(parseInt(b.metaData.remainingFillableTakerAssetAmount)).dividedBy(10 ** outputToken.decimals)
+                            let remainingMakerAmount = makerAmount.multipliedBy(remainingTakerAmount).dividedBy(takerAmount)
+
+                            return {
+                                price: parseFloat(takerAmount / makerAmount).toFixed(this.config.displayedDecimalPoints),
+                                volumeMaker: remainingTakerAmount,
+                                volumeTaker: remainingMakerAmount
+                            }
+                        })
+
+                    let bids =
+                        getOrderBookBids().map(b => {
+
+                            let makerAmount = b.order.makerAssetAmount.dividedBy(10 ** outputToken.decimals)
+                            let takerAmount = b.order.takerAssetAmount.dividedBy(10 ** inputToken.decimals)
+                            let remainingTakerAmount = new BigNumber(parseInt(b.metaData.remainingFillableTakerAssetAmount)).dividedBy(10 ** inputToken.decimals)
+                            let remainingMakerAmount = makerAmount.multipliedBy(remainingTakerAmount).dividedBy(takerAmount)
+
+                            return {
+                                price: parseFloat(makerAmount / takerAmount).toFixed(this.config.displayedDecimalPoints),
+                                volumeMaker: remainingMakerAmount,
+                                volumeTaker: remainingTakerAmount
+                            }
+                        })
+
+                    Array.prototype.sumByPrice = function() {
+                        return Object.values(this.reduce(function(groups, item) {
+                            const key = item.price
+                            groups[key] = groups[key] || {price: key, volumeMaker: 0, volumeTaker: 0}
+                            groups[key] = {
+                                price:key,
+                                volumeMaker: item.volumeMaker.plus(groups[key].volumeMaker),
+                                volumeTaker: item.volumeTaker.plus(groups[key].volumeTaker)
+                            }
+                            return groups
+                        }, {}))
+                    }
+
+                    this.state.bids =
+                        bids
+                            .sumByPrice()
+                            .sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
+
+                    this.state.asks =
+                        asks
+                            .sumByPrice()
+                            .sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
+
+                    this.state.midMarketPrice = await this.midMarketPrice()
+                    await this.update({
+                        isLoadingOrders: false,
+                        triggerScrollToView: true
+                    })
+
+                }
+            },
+
+            async midMarketPrice() {
+                if (this.state.asks.length > 0 && this.state.bids.length > 0) {
+                    let bestAsk = this.state.asks.slice(-1)[0]
+                    let bestBid = this.state.bids[0]
+
+                    return ((parseFloat(bestAsk.price) + parseFloat(bestBid.price)) / 2).toFixed(this.config.displayedDecimalPoints)
+                } else {
+                    let baseTokenUsdPrice = await getTokenUsdPrice(this.state.inputToken.address, this.state.inputToken.symbol)
+                    let quoteTokenUsdPrice = await getTokenUsdPrice(this.state.outputToken.address, this.state.outputToken.symbol)
+
+                    return (baseTokenUsdPrice / quoteTokenUsdPrice).toFixed(this.config.displayedDecimalPoints)
+                }
+            },
+
+            scrollOrderBookIntoView() {
+                let tableHeader = document.getElementById("order-book-header");
+                let orderBookSeparator = document.getElementById("orders-separator");
+                let visibleOrderBookRegion = document.getElementById("order-table-canvas");
+
+                let tableHeaderSize = $(tableHeader).height();
+                let containerHeight = $(visibleOrderBookRegion).height() - tableHeaderSize;
+                let elemTop = orderBookSeparator.offsetTop - tableHeaderSize;
+
+                if (elemTop > containerHeight) {
+                    $(visibleOrderBookRegion).scrollTop(elemTop - containerHeight / 2);
+                }
+            }
+        }
+
+    </script>
+</order-book>

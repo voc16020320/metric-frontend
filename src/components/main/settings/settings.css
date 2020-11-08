@@ -1,4 +1,4 @@
-@import "../theme_colors/colors.css";
+@import "../../theme_colors/colors.css";
 
 .dropdown {
     position: absolute;

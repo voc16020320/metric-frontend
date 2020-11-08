@@ -1,17 +1,13 @@
-import {Orderbook} from "@0x/orderbook";
-import {BigNumber, providerUtils } from '@0x/utils';
+import {BigNumber, providerUtils} from '@0x/utils';
 import {orderFactory} from '@0x/order-utils/lib/src/order_factory';
-import {assetDataUtils} from '0x.js'
-import {accountAddress} from './wallet_manager'
+import {accountAddress, getContractWrapper, getProvider} from './wallet_manager'
 import {getContractAddressesForChainOrThrow} from "@0x/contract-addresses";
 import {Erc20ContractProxy} from "./erc20_contract_proxy";
-import {ContractWrappers} from "@0x/contract-wrappers"
-import { Web3Wrapper } from '@0x/web3-wrapper';
-import { MetamaskSubprovider } from '@0x/subproviders';
+import {getBidsMatching, getReplayClient} from "./0x_order_book_proxy";
+import {isTokenAmountOverLimit, tokensList} from "./token_fetch";
+import {getFastGasPriceInWei} from "./gas_price_oracle";
 
 export const ZeroXOrdersProxy = {
-
-    get0xMeshOrderBook: function() { return orderBook },
 
     is0xApprovedForToken: async function(address, amount) {
         let zeroXAllowanceTargetAddress = await zeroXContractAddresses().then(a => a.erc20Proxy)
@@ -23,56 +19,79 @@ export const ZeroXOrdersProxy = {
         await Erc20ContractProxy.approveTokenForTargetAddress(tokenAddress, zeroXAllowanceTargetAddress)
     },
 
-    submitOrder: submitOrder
+    submitOrder: submitOrder,
+
+    cancelOrder: cancelOrder
+}
+
+async function cancelOrder(order) {
+    return (await getContractWrapper())
+            .exchange
+            .cancelOrder(order.order)
+            .awaitTransactionSuccessAsync({ from: accountAddress() })
 }
 
 async function submitOrder(order, referralAddress, feePercentage) {
 
-    let filledTakerAmount = await tryMatchOrder(order)
-    let unfilledTakerAmount = order.takerAssetAmount.minus(filledTakerAmount)
+    let myFilledMakerAmount = await tryMatchOrder(order)
+    let myUnfilledMakerAmount = order.makerAssetAmount.minus(myFilledMakerAmount)
 
-    if (unfilledTakerAmount.isGreaterThan(0)) {
+    if (myUnfilledMakerAmount.isGreaterThan(0)) {
 
-        let unfilledMakerAmount =
-            order.makerAssetAmount
-                .multipliedBy(unfilledTakerAmount)
-                .dividedBy(order.takerAssetAmount)
+        let myUnfilledTakerAmount =
+            order.takerAssetAmount
+                .multipliedBy(myUnfilledMakerAmount)
+                .dividedToIntegerBy(order.makerAssetAmount)
 
-        let signedOrder = await orderFactory.createSignedOrderAsync(
-            getProvider(),
-            accountAddress(),
-            unfilledMakerAmount,
-            assetDataUtils.encodeERC20AssetData(order.makerAssetAddress),
-            unfilledTakerAmount,
-            assetDataUtils.encodeERC20AssetData(order.takerAssetAddress),
-            await zeroXContractAddresses().then(a => a.exchange),
-            {
-                makerFee: (unfilledMakerAmount * feePercentage).toString(),
-                takerFee: (unfilledTakerAmount * feePercentage).toString(),
-                feeRecipientAddress: referralAddress,
-            }
-        )
+        let makerToken = tokensList().find(t => t.address === order.makerAssetAddress)
+        let takerToken = tokensList().find(t => t.address === order.takerAssetAddress)
 
-        await orderBook.addOrdersAsync([signedOrder])
+        if (
+                isTokenAmountOverLimit(makerToken, myUnfilledMakerAmount) &&
+                isTokenAmountOverLimit(takerToken, myUnfilledTakerAmount)
+            )
+        {
+            let contractWrapper = await getContractWrapper()
+
+            const makerAssetData =
+                await contractWrapper.devUtils.encodeERC20AssetData(order.makerAssetAddress).callAsync();
+
+            const takerAssetData =
+                await contractWrapper.devUtils.encodeERC20AssetData(order.takerAssetAddress).callAsync();
+
+            let signedOrder = await orderFactory.createSignedOrderAsync(
+                getProvider(),
+                accountAddress(),
+                myUnfilledMakerAmount,
+                makerAssetData,
+                myUnfilledTakerAmount,
+                takerAssetData,
+                await zeroXContractAddresses().then(a => a.exchange),
+                {
+                    makerFee: (myUnfilledMakerAmount * feePercentage).toString(),
+                    takerFee: (myUnfilledTakerAmount * feePercentage).toString(),
+                    feeRecipientAddress: referralAddress,
+                }
+            )
+
+            await getReplayClient().submitOrderAsync(signedOrder)
+        }
     }
 }
 
 async function tryMatchOrder(order) {
-    let chainId = await providerUtils.getChainIdAsync(getProvider())
-    let contractWrappers = new ContractWrappers(getProvider(), {
-        chainId: chainId,
-    });
-    let web3Wrapper = new Web3Wrapper(getProvider())
 
     let candidateFillOrders = await findCandidateOrders(order)
 
+    let contractWrapper = await getContractWrapper()
+
     if (candidateFillOrders.length > 0) {
 
-        let candidateFillOrdersTakerAmount = candidateFillOrders.map(o => o.takerAssetAmount)
-        let candidateFillOrdersSignatures = candidateFillOrders.map(o => o.signature)
+        let candidateFillOrdersTakerAmount = candidateFillOrders.map(o => o.takerFillAmount)
+        let candidateFillOrdersSignatures = candidateFillOrders.map(o => o.order.signature)
 
-        let gasPriceWei = await window.web3.eth.getGasPrice()
-        let protocolFeeMultiplier = await contractWrappers.exchange.protocolFeeMultiplier().callAsync()
+        let gasPriceWei = await getFastGasPriceInWei()
+        let protocolFeeMultiplier = await contractWrapper.exchange.protocolFeeMultiplier().callAsync()
         let callData = {
             from: accountAddress(),
             gasPrice: gasPriceWei,
@@ -80,10 +99,10 @@ async function tryMatchOrder(order) {
         }
 
         let fillOrderFunction =
-            await contractWrappers
+            await contractWrapper
                 .exchange
                 .batchFillOrdersNoThrow(
-                    candidateFillOrders,
+                    candidateFillOrders.map(o => o.order),
                     candidateFillOrdersTakerAmount,
                     candidateFillOrdersSignatures
                 )
@@ -92,7 +111,7 @@ async function tryMatchOrder(order) {
         let receipt = await fillOrderFunction.awaitTransactionSuccessAsync(callData);
 
         if (receipt.status === 1 && fillResults.length > 0) {
-            return fillResults.map(l => l.makerAssetFilledAmount).reduce((a,b) => BigNumber.sum(a, b))
+            return fillResults.map(l => l.takerAssetAmount).reduce((a,b) => BigNumber.sum(a, b))
         }
     }
 
@@ -100,57 +119,31 @@ async function tryMatchOrder(order) {
 }
 
 async function findCandidateOrders(order) {
+    let myPrice = order.takerAssetAmount.dividedBy(order.makerAssetAmount)
+    let orders = await getBidsMatching(order.makerAssetAddress, order.takerAssetAddress)
 
-    let limitOrderPrice = order.makerAssetAmount.dividedBy(order.takerAssetAmount)
-    let orders = await orderBook.getOrdersAsync(
-        assetDataUtils.encodeERC20AssetData(order.takerAssetAddress),
-        assetDataUtils.encodeERC20AssetData(order.makerAssetAddress)
-    )
-
-    let orderUnfilledAmount = order.takerAssetAmount
+    let myUnfilledMakerAmount = order.makerAssetAmount
     let candidateFillOrders = []
 
     orders.forEach(bid => {
-        let availableOrderPrice = bid.order.takerAssetAmount.dividedBy(bid.order.makerAssetAmount)
-        let availableOrderFill = bid.order.makerAssetAmount
+        let orderPrice = bid.order.makerAssetAmount.dividedBy(bid.order.takerAssetAmount)
         let remainingUnfilledOrderAmount = new BigNumber(parseInt(bid.metaData.remainingFillableTakerAssetAmount))
 
-        if (remainingUnfilledOrderAmount.isEqualTo(bid.order.takerAssetAmount)) {
+        if (orderPrice.isGreaterThanOrEqualTo(myPrice) &&
+            myUnfilledMakerAmount.isGreaterThan(0) &&
+            remainingUnfilledOrderAmount.isGreaterThan(0))
+        {
+            let possibleFillAmount = BigNumber.min(remainingUnfilledOrderAmount, myUnfilledMakerAmount);
 
-            if (availableOrderPrice.isLessThanOrEqualTo(limitOrderPrice) &&
-                availableOrderFill.isLessThanOrEqualTo(orderUnfilledAmount))
-            {
-                candidateFillOrders.push(bid.order)
-                orderUnfilledAmount = orderUnfilledAmount.minus(availableOrderFill)
-            }
+            candidateFillOrders.push({order: bid.order, takerFillAmount: possibleFillAmount})
+            myUnfilledMakerAmount = myUnfilledMakerAmount.minus(possibleFillAmount)
         }
     })
 
     return candidateFillOrders
 }
 
-function initOrderBook() {
-    return Orderbook.getOrderbookForPollingProvider({
-        httpEndpoint : "https://api.0x.org/sra/v3",
-        pollingIntervalMs: 10000
-    })
-}
-
-function initProvider() {
-    providerEngine = new MetamaskSubprovider(window.web3.currentProvider)
-}
-
 async function zeroXContractAddresses() {
     let chainId = await providerUtils.getChainIdAsync(getProvider())
     return getContractAddressesForChainOrThrow(chainId)
 }
-
-function getProvider() {
-    if (providerEngine === null) {
-        initProvider()
-    }
-    return providerEngine
-}
-
-let orderBook = initOrderBook()
-let providerEngine = null
