@@ -1,9 +1,9 @@
 <order-dashboard>
 
-    <div class="dashboard">
+    <div class="dashboard" if={ inputTokenAvailable() }>
 
         <div class="order-form">
-            <order-form/>
+            <order-form token-address={ state.tokenAddress } />
         </div>
 
         <div class="order-book">
@@ -13,7 +13,6 @@
         <div class="order-list">
             <order-list/>
         </div>
-
     </div>
 
     <script>
@@ -22,14 +21,38 @@
         import OrderForm from './order_form/order_form.riot'
         import OrderBook from './order_book/orderbook.riot'
         import OrderList from './order_list/order_list.riot'
+        import {
+            addTokenWithAddress,
+            findOrAddTokenWithAddress, findTokenWithAddress,
+            registerForTokenListUpdate,
+            tokensList
+        } from "../../common/token_fetch";
 
         export default {
             components: {
                 OrderForm,
                 OrderBook,
                 OrderList
+            },
+            state: {
+                tokenAddress: null
+            },
+            onBeforeMount(props) {
+                registerForTokenListUpdate(this)
+                this.state.tokenAddress = props.tokenAddress
+            },
+            inputTokenAvailable() {
+                return findTokenWithAddress(this.state.tokenAddress) !== undefined
+            },
+            async onTokenListUpdate() {
+                let token = await findOrAddTokenWithAddress(this.state.tokenAddress)
+                if (token !== undefined) {
+                    this.state.tokenAddress = token.address
+                } else {
+                    this.state.tokenAddress = tokensList().find(t => t.symbol.toLowerCase() === "metric").address
+                }
+                this.update()
             }
-
         }
 
     </script>

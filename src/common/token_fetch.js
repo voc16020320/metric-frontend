@@ -17,6 +17,18 @@ export function disableToken(symbol) {
     }
 }
 
+export async function findOrAddTokenWithAddress(address) {
+    let token = findTokenWithAddress(address)
+    if (token === undefined) {
+        await addTokenWithAddress(address)
+    }
+    return findTokenWithAddress(address)
+}
+
+export function findTokenWithAddress(address) {
+    return tokensList().find(t => t.address.toLowerCase().startsWith(address.toLowerCase()))
+}
+
 export function tokensList() { return tokens }
 
 export async function fetchTokensBalances() {
@@ -83,6 +95,23 @@ export function isTokenAmountOverLimit(token, amount) {
 export function addToken(token) {
     if (tokens.find(t => t.symbol === token.symbol) === undefined) {
         tokens.push(token)
+    }
+}
+
+export async function addTokenWithAddress(address) {
+    try {
+        let token = { address: address }
+        let contract = Erc20ContractProxy.erc20Contract(address)
+        token.symbol = await contract.methods.symbol().call().then(s => s.toUpperCase())
+        token.decimals = await contract.methods.decimals().call().then(s => parseInt(s))
+        token.balance =
+            await contract.methods.balanceOf(accountAddress()).call().then(s => parseInt(s)) / (10**token.decimals)
+        token.volume_limit = -1
+
+        addToken(token)
+    } catch (e) {
+        console.log(e.message)
+        console.log("Invalid token address:", address)
     }
 }
 

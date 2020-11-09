@@ -170,10 +170,13 @@
 
                 let tableHeaderSize = $(tableHeader).height();
                 let containerHeight = $(visibleOrderBookRegion).height() - tableHeaderSize;
-                let elemTop = orderBookSeparator.offsetTop - tableHeaderSize;
 
-                if (elemTop > containerHeight) {
-                    $(visibleOrderBookRegion).scrollTop(elemTop - containerHeight / 2);
+                if (orderBookSeparator !== null) {
+                    let elemTop = orderBookSeparator.offsetTop - tableHeaderSize;
+
+                    if (elemTop > containerHeight) {
+                        $(visibleOrderBookRegion).scrollTop(elemTop - containerHeight / 2);
+                    }
                 }
             }
         }

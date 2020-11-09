@@ -23,7 +23,12 @@
         import UnknownTokenDarkImage from './unknown-token-dark.svg'
         import './token_selector.css'
         import { Erc20ContractProxy } from '../../common/erc20_contract_proxy'
-        import {registerForTokenListUpdate, tokensList} from "../../common/token_fetch";
+        import {
+            addTokenWithAddress,
+            findOrAddTokenWithAddress,
+            registerForTokenListUpdate,
+            tokensList
+        } from "../../common/token_fetch";
         import {registerForThemeUpdates} from "../../common/theme_manager";
 
         export default {
@@ -84,18 +89,9 @@
             },
             async buildSortedTokenList(filter) {
                 if (filter !== null &&
-                    filter.match(this.state.addressRegEx) &&
-                    tokensList().findIndex(t => t.address.toLowerCase() === filter) === -1) {
-
-                    let token = { address: filter }
-                    let contract = Erc20ContractProxy.getContract(filter)
-
-                    token.symbol = await contract.methods.symbol().call().then(s => s.toUpperCase())
-                    token.decimals = await contract.methods.decimals().call().then(s => parseInt(s))
-                    token.balance =
-                        await contract.methods.balanceOf(this.accountAddress()).call().then(s => parseInt(s)) / (10**token.decimals)
-                    token.volume_limit = -1
-                    this.addToken(token)
+                    filter.match(this.state.addressRegEx))
+                {
+                    await findOrAddTokenWithAddress(filter)
                 }
                 this.state.sortedTokens = this.sortTokens(tokensList().filter(t => !t.disabled), filter)
             },

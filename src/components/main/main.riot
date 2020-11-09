@@ -27,8 +27,16 @@
     </header>
 
     <div class="main-content">
-        <swap if={ !isOrderBookFeatureEnabled() }/>
-        <order-dashboard if={ isOrderBookFeatureEnabled() }/>
+      <swap if={ !isOrderBookFeatureEnabled() }/>
+
+      <router if={ isOrderBookFeatureEnabled() }>
+          <route path="/#/:address">
+              <order-dashboard token-address={ route.params.address } />
+          </route>
+          <route path="/">
+              <order-dashboard token-address={ defaultInputTokenAddress() } />
+          </route>
+      </router>
     </div>
 
     <div id="footer">
@@ -47,31 +55,42 @@
         import Swap from '../swap_dashboard/swap_menue/swap.riot'
         import OrderDashboard from '../order_dashboard/order_dashboard.riot'
         import {synchronizeOrderBook} from "../../common/0x_order_book_proxy";
-        import {disableToken} from "../../common/token_fetch";
+        import {disableToken, fetchTokensBalances, loadTokenList, tokensList} from "../../common/token_fetch";
+        import {initWeb3} from "../../common/wallet_manager";
+        import {Router, Route, setBase} from "@riotjs/route";
 
         export default {
             components: {
+                Route,
+                Router,
                 Settings,
                 Blocky,
                 Swap,
                 OrderDashboard
             },
-            onBeforeMount() {
-                synchronizeOrderBook()
-                if (this.isOrderBookFeatureEnabled()) {
-                    disableToken("DAI")
-                }
-            },
             async onMounted() {
                 document.title = "Metric Exchange"
-                await this.initWeb3(this)
-                await this.loadTokenList()
-            },
-            async onBeforeUpdate() {
-                await this.fetchTokensBalances()
+
+                await initWeb3()
+                await loadTokenList()
+
+                fetchTokensBalances()
+                synchronizeOrderBook()
+
+                if (this.isOrderBookFeatureEnabled()) {
+                    disableToken("DAI")
+                    disableToken("ETH")
+                }
+
+                setBase(`/`)
+
+                this.update()
             },
             isOrderBookFeatureEnabled() {
                 return window.location.host !== "metric.exchange"
+            },
+            defaultInputTokenAddress() {
+                return tokensList().find(t => t.symbol.toLowerCase() === "metric").address
             }
         }
     </script>

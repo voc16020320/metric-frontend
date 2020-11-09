@@ -13,7 +13,7 @@ export function isWalletConnected() {
     return (accountAddress() !== undefined)
 }
 
-export async function initWeb3(observer) {
+export async function initWeb3() {
     if (typeof Web3.givenProvider !== "undefined") {
 
         window.web3 = new Web3(Web3.givenProvider)
@@ -29,8 +29,6 @@ export async function initWeb3(observer) {
         walletAddress = "0x0000000000000000000000000000000000000000"
         window.web3 = new Web3(new Web3.providers.WebsocketProvider(defaultWSUrl))
     }
-
-    observer.update()
 
 }
 

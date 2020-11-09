@@ -43,7 +43,7 @@
 
         import './order_form.css'
         import TokenSelector from '../../token_selector/token_selector.riot'
-        import {tokensList} from "../../../common/token_fetch";
+        import {fetchTokensBalances, tokensList} from "../../../common/token_fetch";
         import {
             setBaseToken,
             setQuoteToken
@@ -51,6 +51,7 @@
         import {ZeroXOrdersProxy} from "../../../common/0x_orders_proxy";
         import { BigNumber } from '@0x/utils';
         import {calculateMetricFee, MetricReferralAddress} from "../../../common/metric_fee";
+        import { router } from '@riotjs/route'
 
         export default {
             components: {
@@ -69,20 +70,27 @@
                 isInputTokenApproved: false,
                 showTokenSelector: false
             },
-            onBeforeMount() {
+            onBeforeMount(props) {
                 this.state.orderType = this.config.buyOrderType
 
-                this.state.inputToken =
-                    tokensList().find(t => t.symbol.toLowerCase() === "metric")
+                if (props.tokenAddress !== undefined && props.tokenAddress !== null) {
+                    let tokenFromRoute =
+                        tokensList().find(t => t.address.toLowerCase() === props.tokenAddress.toLowerCase())
+
+                    if (tokenFromRoute !== undefined && tokenFromRoute !== null) {
+                        this.state.inputToken = tokenFromRoute
+                        router.push(`/#/${this.state.inputToken.address}`)
+                        setBaseToken(this.state.inputToken)
+                    }
+                }
 
                 this.state.outputToken =
                     tokensList().find(t => t.symbol.toLowerCase() === "dai")
 
-                setBaseToken(this.state.inputToken)
                 setQuoteToken(this.state.outputToken)
             },
-            onMounted() {
-                this.setBuyOrderType()
+            async onMounted() {
+                await this.setBuyOrderType()
             },
             closeTokenSelector() {
                 document.getElementById("token-selector-box").style.display = "none"
@@ -92,6 +100,7 @@
                 document.getElementById("token-selector-input-text").focus()
             },
             async selectToken(token) {
+                router.push(`/#/${token.address}`)
 
                 setBaseToken(token)
 
