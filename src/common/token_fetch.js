@@ -1,8 +1,9 @@
 import EthIcon from './eth.png'
 import HypeIcon from './hype.png'
 import { accountAddress } from "./wallet_manager";
-import { Erc20ContractProxy } from "./erc20_contract_proxy";
+import {Erc20ContractProxy} from "./erc20_contract_proxy";
 import {fetchJson} from "./json_api_fetch";
+import {fetch0xAllowanceForToken} from "./0x_orders_proxy";
 
 
 export function registerForTokenListUpdate(item) {
@@ -36,7 +37,9 @@ export async function fetchTokensBalances() {
     await Promise.all(
         tokens.map(async (t, index) => {
             let token = t
-            token.balance = await fetchTokenBalance(token)
+            let balanceAndAllowance = await fetchTokenBalance(token)
+            token.balance = balanceAndAllowance.balance
+            token.allowance = balanceAndAllowance.allowance
             tokens[index] = token
         })
     )
@@ -47,17 +50,26 @@ export async function fetchTokensBalances() {
 async function fetchTokenBalance(token) {
 
     let tokenBalance = 0
+    let tokenAllowance = 0
 
     if (token.symbol.toLowerCase() === "eth") {
-        tokenBalance = await window.web3.eth.getBalance(accountAddress())
+        tokenBalance = formatAmount(await window.web3.eth.getBalance(accountAddress()))
     } else {
         let contract = Erc20ContractProxy.erc20Contract(token.address)
-        tokenBalance = await contract.methods.balanceOf(accountAddress()).call()
+        tokenBalance = formatAmount(await contract.methods.balanceOf(accountAddress()).call())
+        if (tokenBalance > 0) {
+            tokenAllowance = await fetch0xAllowanceForToken(token.address)
+        }
     }
 
-    tokenBalance = isNaN(tokenBalance) ? 0 : tokenBalance / (10**token.decimals)
+    return {
+        balance: tokenBalance / (10**token.decimals),
+        allowance: tokenAllowance / (10**token.decimals)
+    }
+}
 
-    return tokenBalance
+function formatAmount(amount) {
+    return isNaN(amount) ? 0 : amount
 }
 
 export async function loadTokenList()

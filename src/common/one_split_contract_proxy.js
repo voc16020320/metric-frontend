@@ -11,7 +11,12 @@ export const OneSplitContactProxy = {
     },
 
     approveOneSplitForToken: function(address) {
-        Erc20ContractProxy.approveTokenForTargetAddress(address, oneSplitAddress)
+        Erc20ContractProxy.approveTokenForTargetAddress(
+            address,
+            oneSplitAddress,
+            function (a,b) {},
+            function (a) {}
+        )
     }
 }
 

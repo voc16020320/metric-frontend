@@ -2,7 +2,7 @@ import {BigNumber, providerUtils} from '@0x/utils';
 import {orderFactory} from '@0x/order-utils/lib/src/order_factory';
 import {accountAddress, getContractWrapper, getProvider} from './wallet_manager'
 import {getContractAddressesForChainOrThrow} from "@0x/contract-addresses";
-import {Erc20ContractProxy} from "./erc20_contract_proxy";
+import {Erc20ContractProxy, fetchTokenAllowance} from "./erc20_contract_proxy";
 import {getBidsMatching, getReplayClient} from "./0x_order_book_proxy";
 import {isTokenAmountOverLimit, tokensList} from "./token_fetch";
 import {getFastGasPriceInWei} from "./gas_price_oracle";
@@ -14,14 +14,24 @@ export const ZeroXOrdersProxy = {
         return await Erc20ContractProxy.isAddressApprovedForToken(zeroXAllowanceTargetAddress, address, amount)
     },
 
-    approveZeroXAllowance: async function(tokenAddress) {
+    approveZeroXAllowance: async function(tokenAddress, confirmationCallback, errorCallback) {
         let zeroXAllowanceTargetAddress = await zeroXContractAddresses().then(a => a.erc20Proxy)
-        await Erc20ContractProxy.approveTokenForTargetAddress(tokenAddress, zeroXAllowanceTargetAddress)
+        Erc20ContractProxy.approveTokenForTargetAddress(
+            tokenAddress,
+            zeroXAllowanceTargetAddress,
+            confirmationCallback,
+            errorCallback
+        )
     },
 
     submitOrder: submitOrder,
 
     cancelOrder: cancelOrder
+}
+
+export async function fetch0xAllowanceForToken(address) {
+    let zeroXAllowanceTargetAddress = await zeroXContractAddresses().then(a => a.erc20Proxy)
+    return await fetchTokenAllowance(zeroXAllowanceTargetAddress, address)
 }
 
 async function cancelOrder(order) {

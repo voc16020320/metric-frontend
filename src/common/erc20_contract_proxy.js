@@ -10,25 +10,32 @@ export const Erc20ContractProxy = {
         return contract(abi, address)
     },
 
-    approveTokenForTargetAddress: function(tokenAddress, targetAddress) {
+    approveTokenForTargetAddress: function(tokenAddress, targetAddress, confirmationCallBack, errorCallback) {
         contract(Erc20Abi, tokenAddress)
             .methods
             .approve(targetAddress, window.web3.utils.toBN("10000000000000000000000000000"))
             .send({ from: accountAddress() })
+            .on('confirmation', confirmationCallBack)
+            .on('error', errorCallback)
     },
 
     isAddressApprovedForToken: async function(address, tokenAddress, amount) {
-        if (tokenAddress.toLowerCase() !== "0x0000000000000000000000000000000000000000") {
-            return await Erc20ContractProxy
-                .erc20Contract(tokenAddress)
-                .methods
-                .allowance(accountAddress(), address)
-                .call()
-                .then((allowance) => { return (allowance > amount) })
-        }
-
-        return true
+        let allowance = await fetchTokenAllowance(address, tokenAddress)
+        return allowance > amount
     },
+}
+
+export async function fetchTokenAllowance(address, tokenAddress) {
+    let allowance = 0
+    if (tokenAddress.toLowerCase() !== "0x0000000000000000000000000000000000000000") {
+        allowance = await Erc20ContractProxy
+            .erc20Contract(tokenAddress)
+            .methods
+            .allowance(accountAddress(), address)
+            .call()
+    }
+
+    return allowance
 }
 
 function contract(abi, address) {
