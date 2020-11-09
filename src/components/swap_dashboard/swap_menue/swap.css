@@ -1,13 +1,16 @@
 @import '../../theme_colors/colors.css';
 
 .swap-form {
-  margin: 0 auto;
+  margin: auto;
   margin-top: 150px;
-  width: 340px;
-  border-radius: 10px;
+  -webkit-border-radius: 10px;
+          border-radius: 10px;
+  max-width: 340px;
   padding: 30px;
   background: var(--swap-form-background-color);
-  box-shadow: 0 1px 5px 1px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--swap-from-border-color);
+  -webkit-box-shadow: 0 1px 5px 1px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 1px 5px 1px rgba(0, 0, 0, 0.05);
 }
 
 #swap-form .section {
@@ -15,6 +18,7 @@
 }
 
 #swap-form .section .trade-options {
+  display: -ms-grid;
   display: grid;
   grid-auto-flow: column;
   text-align: center;
@@ -35,7 +39,8 @@
 .swap-button {
   margin-top: 30px;
   background: var(--swap-button-background-color);
-  border-radius: 4px;
+  -webkit-border-radius: 4px;
+          border-radius: 4px;
   color: var(--swap-button-text-color);
   text-align: center;
   padding: 9px;
@@ -44,8 +49,14 @@
 }
 
 .switch {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
-  justify-content: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+      -ms-flex-pack: center;
+          justify-content: center;
 }
 
 .switch-button-image {
@@ -60,8 +71,14 @@
 .direction-title {
   color: var(--swap-direction-title-color);
   margin-bottom: 20px;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
-  justify-content: space-between;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
 }
 
 .direction-title .balance-link {
@@ -110,9 +127,9 @@ input[type=number] {
 
 .swap-box {
   position: absolute;
-  top: 80px;
+  top: 0;
   left: 50%;
-  margin-left: -200px;
+  margin-left: -201px;
   width: 342px;
   height: 620px;
   background: var(--swap-form-background-color);
@@ -122,5 +139,3 @@ input[type=number] {
   padding-right: 30px ;
   padding-top: 30px;
 }
-
-

@@ -1,12 +1,12 @@
 @import '../../theme_colors/colors.css';
 
 blocky {
-    display: inline-flex;
-    flex-wrap: nowrap;
+    display: block;
     border: none;
     outline: none;
-    padding: 0.5rem;
-    border-radius: 4px;
+    line-height: 30px;
+    padding-left: 15px;
+    margin-right: 10px;
 }
 
 blocky #address {
@@ -24,6 +24,13 @@ blocky #wallet-connect {
 }
 
 blocky #identicon {
-    margin-right: 10px;
-    border-radius: 5px;
+    padding-left: 15px;
+    -webkit-border-radius: 5px;
+            border-radius: 5px;
+}
+
+@media(min-width: 600px){
+    blocky{
+        line-height: 50px;
+    }
 }

@@ -40,3 +40,13 @@
     color: var(--main-text-color);
     text-decoration: underline;
 }
+
+.order-list-big-screen-column {
+    display: none;
+}
+
+@media(min-width: 1000px) {
+    .order-list-big-screen-column {
+        display: table-cell;
+    }
+}

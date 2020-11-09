@@ -11,8 +11,8 @@
                     <th>Type</th>
                     <th>Price { state.outputToken.symbol }</th>
                     <th>Amount/Filled { state.inputToken.symbol }</th>
-                    <th>Total { state.outputToken.symbol } </th>
-                    <th>Expires in</th>
+                    <th class="order-list-big-screen-column">Total { state.outputToken.symbol } </th>
+                    <th class="order-list-big-screen-column">Expires in</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -20,16 +20,16 @@
                     <td>Sell</td>
                     <td>{ parseFloat(order.order.takerAssetAmount / order.order.makerAssetAmount).toFixed(3) }</td>
                     <td>{ (order.order.makerAssetAmount / (10 ** state.inputToken.decimals)).toFixed(3) } / { filledMakerAmount(order).toFixed(3)}</td>
-                    <td>{ (order.order.takerAssetAmount / (10 ** state.outputToken.decimals)).toFixed(3) }</td>
-                    <td>{ getDateDiff(order.order.expirationTimeSeconds) }</td>
+                    <td class="order-list-big-screen-column">{ (order.order.takerAssetAmount / (10 ** state.outputToken.decimals)).toFixed(3) }</td>
+                    <td class="order-list-big-screen-column">{ getDateDiff(order.order.expirationTimeSeconds) }</td>
                     <td class="cancel-order" onclick={ this.cancelOrder }>Cancel</td>
                 </tr>
                 <tr each={ order in state.bids } key={ order.metaData.orderHash } id={ order.metaData.orderHash }>
                     <td>Buy</td>
                     <td>{ parseFloat(order.order.makerAssetAmount / order.order.takerAssetAmount).toFixed(3) }</td>
                     <td>{ (order.order.takerAssetAmount / (10 ** state.inputToken.decimals)).toFixed(3) } / { filledTakerAmount(order).toFixed(3) }</td>
-                    <td>{ (order.order.makerAssetAmount / (10 ** state.outputToken.decimals)).toFixed(3) }</td>
-                    <td>{ getDateDiff(order.order.expirationTimeSeconds) }</td>
+                    <td class="order-list-big-screen-column">{ (order.order.makerAssetAmount / (10 ** state.outputToken.decimals)).toFixed(3) }</td>
+                    <td class="order-list-big-screen-column">{ getDateDiff(order.order.expirationTimeSeconds) }</td>
                     <td class="cancel-order" onclick={ this.cancelOrder }>Cancel</td>
                 </tr>
                 </tbody>
