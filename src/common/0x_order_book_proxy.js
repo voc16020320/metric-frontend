@@ -106,7 +106,8 @@ async function getOrdersMatching(baseTokenAddress, quoteTokenAddress) {
                         .multipliedBy(parseInt(b.metaData.remainingFillableTakerAssetAmount))
                         .dividedToIntegerBy(b.order.takerAssetAmount)
 
-                return isTokenAmountOverLimit(getBaseToken(), takerAmount) &&
+                return b.order.takerAddress === "0x0000000000000000000000000000000000000000" &&
+                    isTokenAmountOverLimit(getBaseToken(), takerAmount) &&
                     isTokenAmountOverLimit(getQuoteToken(), makerAmount)
             })
 
@@ -119,7 +120,8 @@ async function getOrdersMatching(baseTokenAddress, quoteTokenAddress) {
                         .multipliedBy(parseInt(b.metaData.remainingFillableTakerAssetAmount))
                         .dividedToIntegerBy(b.order.takerAssetAmount)
 
-                return isTokenAmountOverLimit(getQuoteToken(), takerAmount) &&
+                return b.order.takerAddress === "0x0000000000000000000000000000000000000000" &&
+                        isTokenAmountOverLimit(getQuoteToken(), takerAmount) &&
                         isTokenAmountOverLimit(getBaseToken(), makerAmount)
             })
 
