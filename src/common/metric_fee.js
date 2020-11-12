@@ -17,5 +17,5 @@ export function fetchMetricBalance() {
     return 0
 }
 
-let MetricFee = 0.003
+let MetricFee = 0.005
 
