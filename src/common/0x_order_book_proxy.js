@@ -1,7 +1,9 @@
 import {HttpClient} from "@0x/connect";
-import {getContractWrapper} from "./wallet_manager";
-import {BigNumber} from "@0x/utils";
+import {accountAddress, getContractWrapper, getProvider} from "./wallet_manager";
+import {BigNumber, providerUtils} from "@0x/utils";
 import {isTokenAmountOverLimit, tokensList} from "./token_fetch";
+import {fetchTokenAllowance, fetchTokenBalance} from "./erc20_contract_proxy";
+import {getContractAddressesForChainOrThrow} from "@0x/contract-addresses";
 
 export function registerForOrderBookUpdateEvents(object) {
     callbacksRegister.push(object)
@@ -15,12 +17,12 @@ export function getReplayClient() {
     return relayClient
 }
 
-export function getOrderBookBids() {
-    return bids
+export function getOrderBookBids(onlyValidOrders = true) {
+    return bids.filter(o => !onlyValidOrders || o.is_valid).map(o => o.order)
 }
 
-export function getOrderBookAsks() {
-    return asks
+export function getOrderBookAsks(onlyValidOrders = true) {
+    return asks.filter(o => !onlyValidOrders || o.is_valid).map(o => o.order)
 }
 
 export async function synchronizeOrderBook() {
@@ -54,7 +56,7 @@ export function getQuoteToken() {
 
 export async function getBidsMatching(baseTokenAddress, quoteTokenAddress) {
     let orders = await getOrdersMatching(baseTokenAddress, quoteTokenAddress)
-    return orders.bids
+    return orders.bids.filter(o => o.is_valid).map(o => o.order)
 }
 
 async function updateOrderBook() {
@@ -96,34 +98,48 @@ async function getOrdersMatching(baseTokenAddress, quoteTokenAddress) {
             quoteAssetData: quoteAssetData,
         }
     )
+    let filteredBids = []
+    let filteredAsks = []
 
-    let filteredBids =
-        orders.bids.records
-            .filter(b => {
-                let takerAmount = new BigNumber(parseInt(b.metaData.remainingFillableTakerAssetAmount))
-                let makerAmount =
-                    b.order.makerAssetAmount
-                        .multipliedBy(parseInt(b.metaData.remainingFillableTakerAssetAmount))
-                        .dividedToIntegerBy(b.order.takerAssetAmount)
+    for(let b of orders.bids.records) {
+        let takerAmount = new BigNumber(parseInt(b.metaData.remainingFillableTakerAssetAmount))
+        let makerAmount =
+            b.order.makerAssetAmount
+                .multipliedBy(takerAmount)
+                .dividedToIntegerBy(b.order.takerAssetAmount)
 
-                return b.order.takerAddress === "0x0000000000000000000000000000000000000000" &&
-                    isTokenAmountOverLimit(getBaseToken(), takerAmount) &&
-                    isTokenAmountOverLimit(getQuoteToken(), makerAmount)
-            })
+        let isValidOrder =
+            b.order.takerAddress === "0x0000000000000000000000000000000000000000" &&
+            isTokenAmountOverLimit(baseToken, takerAmount) &&
+            isTokenAmountOverLimit(quoteToken, makerAmount)
 
-    let filteredAsks =
-        orders.asks.records
-            .filter(b => {
-                let takerAmount = new BigNumber(parseInt(b.metaData.remainingFillableTakerAssetAmount))
-                let makerAmount =
-                    b.order.makerAssetAmount
-                        .multipliedBy(parseInt(b.metaData.remainingFillableTakerAssetAmount))
-                        .dividedToIntegerBy(b.order.takerAssetAmount)
+        filteredBids.push(
+            {
+                order: b,
+                is_valid: isValidOrder
+            }
+        )
+    }
 
-                return b.order.takerAddress === "0x0000000000000000000000000000000000000000" &&
-                        isTokenAmountOverLimit(getQuoteToken(), takerAmount) &&
-                        isTokenAmountOverLimit(getBaseToken(), makerAmount)
-            })
+    for(let b of orders.asks.records) {
+        let takerAmount = new BigNumber(parseInt(b.metaData.remainingFillableTakerAssetAmount))
+        let makerAmount =
+            b.order.makerAssetAmount
+                .multipliedBy(takerAmount)
+                .dividedToIntegerBy(b.order.takerAssetAmount)
+
+        let isValidOrder =
+            b.order.takerAddress === "0x0000000000000000000000000000000000000000" &&
+            isTokenAmountOverLimit(quoteToken, takerAmount) &&
+            isTokenAmountOverLimit(baseToken, makerAmount)
+
+        filteredAsks.push(
+            {
+                order: b,
+                is_valid: isValidOrder
+            }
+        )
+    }
 
     return {
         bids: filteredBids,
@@ -132,6 +148,10 @@ async function getOrdersMatching(baseTokenAddress, quoteTokenAddress) {
 
 }
 
+export async function zeroXContractAddresses() {
+    let chainId = await providerUtils.getChainIdAsync(getProvider())
+    return getContractAddressesForChainOrThrow(chainId)
+}
 
 let bids = []
 let asks = []

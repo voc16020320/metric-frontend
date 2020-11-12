@@ -55,7 +55,13 @@
         import Swap from '../swap_dashboard/swap_menue/swap.riot'
         import OrderDashboard from '../order_dashboard/order_dashboard.riot'
         import {synchronizeOrderBook} from "../../common/0x_order_book_proxy";
-        import {disableToken, fetchTokensBalances, loadTokenList, tokensList} from "../../common/token_fetch";
+        import {
+            disableToken,
+            fetchTokensAllowances,
+            fetchTokensBalances,
+            loadTokenList,
+            tokensList
+        } from "../../common/token_fetch";
         import {initWeb3} from "../../common/wallet_manager";
         import {Router, Route, setBase} from "@riotjs/route";
 
@@ -75,6 +81,7 @@
                 await loadTokenList()
 
                 fetchTokensBalances()
+                fetchTokensAllowances()
                 synchronizeOrderBook()
 
                 if (this.isOrderBookFeatureEnabled()) {

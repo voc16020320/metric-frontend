@@ -20,22 +20,29 @@ export const Erc20ContractProxy = {
     },
 
     isAddressApprovedForToken: async function(address, tokenAddress, amount) {
-        let allowance = await fetchTokenAllowance(address, tokenAddress)
+        let allowance = await fetchTokenAllowance(accountAddress(), address, tokenAddress)
         return allowance > amount
     },
 }
 
-export async function fetchTokenAllowance(address, tokenAddress) {
+export async function fetchTokenAllowance(sourceAddress, targetAddress, tokenAddress) {
     let allowance = 0
     if (tokenAddress.toLowerCase() !== "0x0000000000000000000000000000000000000000") {
         allowance = await Erc20ContractProxy
             .erc20Contract(tokenAddress)
             .methods
-            .allowance(accountAddress(), address)
+            .allowance(sourceAddress, targetAddress)
             .call()
     }
 
-    return allowance
+    return isNaN(allowance) ? 0 : allowance
+}
+
+export async function fetchTokenBalance(address, tokenAddress) {
+    let contract = Erc20ContractProxy.erc20Contract(tokenAddress)
+    let allowance = await contract.methods.balanceOf(address).call()
+
+    return isNaN(allowance) ? 0 : allowance
 }
 
 function contract(abi, address) {

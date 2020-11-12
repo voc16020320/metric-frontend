@@ -13,7 +13,7 @@ async function getEtherChainFasGasPriceInWei() {
     let fastGasPrice = 0
 
     if (gasPrices !== undefined && gasPrices.fast !== undefined) {
-        fastGasPrice = 0
+        fastGasPrice = gasPrices.fast
     }
 
     return fastGasPrice * (10 ** 9)

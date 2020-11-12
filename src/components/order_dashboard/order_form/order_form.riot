@@ -43,7 +43,7 @@
 
         import './order_form.css'
         import TokenSelector from '../../token_selector/token_selector.riot'
-        import {fetchTokensBalances, tokensList} from "../../../common/token_fetch";
+        import {registerForTokenAllowancesUpdate, tokensList} from "../../../common/token_fetch";
         import {
             setBaseToken,
             setQuoteToken
@@ -92,7 +92,11 @@
                 this.setOrderMessage()
             },
             async onMounted() {
+                registerForTokenAllowancesUpdate(this)
                 await this.setBuyOrderType()
+            },
+            async onTokenAllowancesUpdate() {
+                this.update()
             },
             closeTokenSelector() {
                 document.getElementById("token-selector-box").style.display = "none"
@@ -227,18 +231,15 @@
                 ZeroXOrdersProxy.approveZeroXAllowance(
                     token.address,
                     (a, b) => {
-                        this.setPlaceOrderMessage()
+                        this.setOrderMessage()
                     },
                     (e) => {
-                        this.setPlaceOrderMessage()
+                        this.setOrderMessage()
                     }
                 )
             },
             setApprovalMessage(token) {
                 this.update({submitMessage: `APPROVING ${token.symbol}`})
-            },
-            setPlaceOrderMessage() {
-                this.update({submitMessage: "PLACE ORDER"})
             },
             setOrderMessage() {
                 if (!this.isValidInputs()) {

@@ -96,7 +96,7 @@
                             let remainingMakerAmount = makerAmount.multipliedBy(remainingTakerAmount).dividedBy(takerAmount)
 
                             return {
-                                price: parseFloat(takerAmount / makerAmount).toFixed(this.config.displayedDecimalPoints),
+                                price: takerAmount.dividedBy(makerAmount).toFixed(this.config.displayedDecimalPoints, BigNumber.ROUND_UP),
                                 volumeMaker: remainingTakerAmount,
                                 volumeTaker: remainingMakerAmount
                             }
@@ -111,7 +111,7 @@
                             let remainingMakerAmount = makerAmount.multipliedBy(remainingTakerAmount).dividedBy(takerAmount)
 
                             return {
-                                price: parseFloat(makerAmount / takerAmount).toFixed(this.config.displayedDecimalPoints),
+                                price: makerAmount.dividedBy(takerAmount).toFixed(this.config.displayedDecimalPoints, BigNumber.ROUND_DOWN),
                                 volumeMaker: remainingMakerAmount,
                                 volumeTaker: remainingTakerAmount
                             }

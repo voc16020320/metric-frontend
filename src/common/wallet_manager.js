@@ -20,7 +20,7 @@ export async function initWeb3() {
         await connectWallet();
 
         Web3.givenProvider.on("accountsChanged", (accounts) => {
-            updateAccountAddressAndRefresh(accounts, observer)
+            updateAccountAddress(accounts)
         })
 
         console.log('connected wallet');
@@ -46,11 +46,6 @@ export async function connectWallet() {
 
 export function updateAccountAddress(accounts) {
     walletAddress = accounts[0]
-}
-
-function updateAccountAddressAndRefresh(accounts, observer) {
-    updateAccountAddress(accounts)
-    observer.update()
 }
 
 export function getProvider() {

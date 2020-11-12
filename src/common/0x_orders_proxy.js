@@ -1,9 +1,8 @@
 import {BigNumber, providerUtils} from '@0x/utils';
 import {orderFactory} from '@0x/order-utils/lib/src/order_factory';
 import {accountAddress, getContractWrapper, getProvider} from './wallet_manager'
-import {getContractAddressesForChainOrThrow} from "@0x/contract-addresses";
 import {Erc20ContractProxy, fetchTokenAllowance} from "./erc20_contract_proxy";
-import {getBidsMatching, getReplayClient} from "./0x_order_book_proxy";
+import {getBidsMatching, getReplayClient, zeroXContractAddresses} from "./0x_order_book_proxy";
 import {isTokenAmountOverLimit, tokensList} from "./token_fetch";
 import {getFastGasPriceInWei} from "./gas_price_oracle";
 
@@ -31,7 +30,7 @@ export const ZeroXOrdersProxy = {
 
 export async function fetch0xAllowanceForToken(address) {
     let zeroXAllowanceTargetAddress = await zeroXContractAddresses().then(a => a.erc20Proxy)
-    return await fetchTokenAllowance(zeroXAllowanceTargetAddress, address)
+    return await fetchTokenAllowance(accountAddress(), zeroXAllowanceTargetAddress, address)
 }
 
 async function cancelOrder(order) {
@@ -135,7 +134,8 @@ async function findCandidateOrders(order) {
     let myUnfilledMakerAmount = order.makerAssetAmount
     let candidateFillOrders = []
 
-    orders.forEach(bid => {
+    for(let bid of orders) {
+
         let orderPrice = bid.order.makerAssetAmount.dividedBy(bid.order.takerAssetAmount)
         let remainingUnfilledOrderAmount = new BigNumber(parseInt(bid.metaData.remainingFillableTakerAssetAmount))
 
@@ -148,12 +148,11 @@ async function findCandidateOrders(order) {
             candidateFillOrders.push({order: bid.order, takerFillAmount: possibleFillAmount})
             myUnfilledMakerAmount = myUnfilledMakerAmount.minus(possibleFillAmount)
         }
-    })
+
+        if (myUnfilledMakerAmount.isZero()) {
+            break
+        }
+    }
 
     return candidateFillOrders
-}
-
-async function zeroXContractAddresses() {
-    let chainId = await providerUtils.getChainIdAsync(getProvider())
-    return getContractAddressesForChainOrThrow(chainId)
 }

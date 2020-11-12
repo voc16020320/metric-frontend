@@ -10,6 +10,14 @@ export function registerForTokenListUpdate(item) {
     register.push(item)
 }
 
+export function registerForTokenBalancesUpdate(item) {
+    balancesRegister.push(item)
+}
+
+export function registerForTokenAllowancesUpdate(item) {
+    allowancesRegister.push(item)
+}
+
 export function disableToken(symbol) {
     for (let i = 0; i < tokens.length; i++) {
         if (tokens[i].symbol.toLowerCase() === symbol.toLowerCase()) {
@@ -32,15 +40,34 @@ export function findTokenWithAddress(address) {
 
 export function tokensList() { return tokens }
 
+export async function fetchTokensAllowances() {
+
+    await Promise.all(
+        tokens.map( async (token) => {
+            let allowance = await fetchTokenAllowance(token)
+            if (token.allowance !== allowance) {
+                token.allowance = allowance
+                await Promise.all(
+                    allowancesRegister.map(item => item.onTokenAllowancesUpdate())
+                )
+            }
+        })
+    )
+
+    setTimeout(fetchTokensAllowances, 10000)
+}
+
 export async function fetchTokensBalances() {
 
     await Promise.all(
-        tokens.map(async (t, index) => {
-            let token = t
-            let balanceAndAllowance = await fetchTokenBalance(token)
-            token.balance = balanceAndAllowance.balance
-            token.allowance = balanceAndAllowance.allowance
-            tokens[index] = token
+        tokens.map(async (token) => {
+            let balance = await fetchTokenBalance(token)
+            if (token.balance !== balance) {
+                token.balance = balance
+                await Promise.all(
+                    balancesRegister.map(item => item.onTokenBalancesUpdate())
+                )
+            }
         })
     )
 
@@ -50,22 +77,28 @@ export async function fetchTokensBalances() {
 async function fetchTokenBalance(token) {
 
     let tokenBalance = 0
-    let tokenAllowance = 0
 
     if (token.symbol.toLowerCase() === "eth") {
         tokenBalance = formatAmount(await window.web3.eth.getBalance(accountAddress()))
     } else {
         let contract = Erc20ContractProxy.erc20Contract(token.address)
         tokenBalance = formatAmount(await contract.methods.balanceOf(accountAddress()).call())
-        if (tokenBalance > 0) {
+    }
+
+    return formatAmount(tokenBalance) / (10**token.decimals)
+}
+
+async function fetchTokenAllowance(token) {
+
+    let tokenAllowance = 0
+
+    if (token.symbol.toLowerCase() !== "eth") {
+        if (token.balance > 0) {
             tokenAllowance = await fetch0xAllowanceForToken(token.address)
         }
     }
 
-    return {
-        balance: tokenBalance / (10**token.decimals),
-        allowance: tokenAllowance / (10**token.decimals)
-    }
+    return formatAmount(tokenAllowance) / (10**token.decimals)
 }
 
 function formatAmount(amount) {
@@ -86,6 +119,7 @@ export async function loadTokenList()
             at.forEach(t => {
                 addToken({
                     balance: 0,
+                    allowance: 0,
                     address: t.address,
                     symbol: t.symbol,
                     decimals: t.decimals,
@@ -116,8 +150,8 @@ export async function addTokenWithAddress(address) {
         let contract = Erc20ContractProxy.erc20Contract(address)
         token.symbol = await contract.methods.symbol().call().then(s => s.toUpperCase())
         token.decimals = await contract.methods.decimals().call().then(s => parseInt(s))
-        token.balance =
-            await contract.methods.balanceOf(accountAddress()).call().then(s => parseInt(s)) / (10**token.decimals)
+        token.balance = 0
+        token.allowance = 0
         token.volume_limit = -1
 
         addToken(token)
@@ -134,6 +168,7 @@ let tokens = [
         symbol: "BUILD",
         logoURI: "https://etherscan.io/token/images/build_32.png",
         balance: 0,
+        allowance: 0,
         volume_limit: -1,
         disabled: false
     },
@@ -143,6 +178,7 @@ let tokens = [
         symbol: "METRIC",
         logoURI: "https://etherscan.io/images/main/empty-token.png",
         balance: 0,
+        allowance: 0,
         volume_limit: -1,
         disabled: false
     },
@@ -152,6 +188,7 @@ let tokens = [
         decimals: 18,
         logoURI: EthIcon,
         balance: 0,
+        allowance: 0,
         volume_limit: -1,
         disabled: false
     },
@@ -161,6 +198,7 @@ let tokens = [
         symbol: "DAI",
         logoURI: "https://1inch.exchange/assets/tokens/0x6b175474e89094c44da98b954eedeac495271d0f.png",
         balance: 0,
+        allowance: 0,
         volume_limit: 10,
         disabled: false
     },
@@ -170,9 +208,12 @@ let tokens = [
         symbol: "HYPE",
         logoURI: HypeIcon,
         balance: 0,
+        allowance: 0,
         volume_limit: -1,
         disabled: false
     }
 ]
 
 let register = []
+let balancesRegister = []
+let allowancesRegister = []

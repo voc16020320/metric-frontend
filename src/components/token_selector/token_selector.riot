@@ -10,7 +10,7 @@
                 <tr id="token-{ token.symbol }" each={ token in state.sortedTokens } key={ token.symbol } onclick={ fetchTokenInfo }>
                     <td class="img"><img src="{ fetchTokenLogoURI(token) }" alt=" " onerror={ changeLogoToDefault }></td>
                     <td class="symbol">{ token.symbol }</td>
-                    <td class="balance">{ this.round(token.balance, 4) }</td>
+                    <td class="balance">{ safeRound(token.balance) }</td>
                 </tr>
             </table>
         </div>
@@ -22,14 +22,13 @@
         import UnknownTokenLightImage from './unknown-token-light.svg'
         import UnknownTokenDarkImage from './unknown-token-dark.svg'
         import './token_selector.css'
-        import { Erc20ContractProxy } from '../../common/erc20_contract_proxy'
         import {
-            addTokenWithAddress,
-            findOrAddTokenWithAddress,
+            findOrAddTokenWithAddress, registerForTokenBalancesUpdate,
             registerForTokenListUpdate,
             tokensList
         } from "../../common/token_fetch";
         import {registerForThemeUpdates} from "../../common/theme_manager";
+        import { BigNumber } from '@0x/utils'
 
         export default {
             config: {
@@ -39,6 +38,9 @@
                 sortedTokens: [],
                 addressRegEx: new RegExp("0x[0-9a-zA-Z]{40}")
             },
+            safeRound(n) {
+                return new BigNumber(n).toFixed(4, BigNumber.ROUND_DOWN)
+            },
             async onBeforeMount() {
                 await this.buildSortedTokenList(null)
             },
@@ -46,11 +48,15 @@
                 document.addEventListener('click', this.listenToSelectorCloseClick)
                 registerForThemeUpdates(this)
                 registerForTokenListUpdate(this)
+                registerForTokenBalancesUpdate(this)
                 this.updateTheme()
             },
             async onTokenListUpdate() {
                 await this.filterTokenSearch()
                 this.update()
+            },
+            async onTokenBalancesUpdate() {
+                await this.onTokenListUpdate()
             },
             listenToSelectorCloseClick(e) {
                 let selector = document.getElementById('token-selector');
