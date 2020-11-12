@@ -127,7 +127,7 @@
             updateSubmitButtonState() {
                 this.setOrderMessage()
                 let button = document.getElementById("place-order-button")
-                if (!this.isValidOrder()) {
+                if (!this.isValidOrder() || !this.isSufficientBalance()) {
                     button.classList.remove("active-button")
                     button.classList.remove("clickable-button")
                     button.onclick = null
@@ -204,7 +204,10 @@
             },
             feeAmount() {
                 let amount = this.outputAmount()
-                return (isNaN(amount) ? 0 : amount) * calculateMetricFee()
+                return this.applyFee((isNaN(amount) ? 0 : amount))
+            },
+            applyFee(amount) {
+                return amount * calculateMetricFee()
             },
             isBuyOrder() {
                 return this.state.orderType === this.config.buyOrderType
@@ -246,6 +249,8 @@
                     this.state.submitMessage = "PLACE ORDER"
                 } else if (!this.isValidOrder()) {
                     this.state.submitMessage = `MUST BE >${this.state.outputToken.volume_limit} ${this.state.outputToken.symbol}`
+                } else if (!this.isSufficientBalance()) {
+                    this.state.submitMessage = `INSUFFICIENT BALANCE`
                 } else if(!this.maybeIsApproved()) {
                     if (this.isBuyOrder()) {
                         this.state.submitMessage = `APPROVE ${this.state.outputToken.symbol}`
@@ -269,6 +274,19 @@
             },
             isValidInputs() {
                 return !isNaN(this.state.price) && !isNaN(this.state.amount)
+            },
+            isSufficientBalance() {
+                let balance = 0
+                let amount = 0
+                if (this.isBuyOrder()) {
+                    balance = tokensList().find(t => t.symbol === this.state.outputToken.symbol).balance
+                    amount = this.outputAmount()
+                } else {
+                    balance = tokensList().find(t => t.symbol === this.state.inputToken.symbol).balance
+                    amount = this.inputAmount()
+                }
+
+                return balance > (amount + this.applyFee(amount))
             }
         }
 
