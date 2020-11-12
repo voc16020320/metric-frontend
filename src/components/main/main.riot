@@ -94,7 +94,7 @@
                 this.update()
             },
             isOrderBookFeatureEnabled() {
-                return window.location.host !== "metric.exchange"
+                return true // window.location.host !== "metric.exchange"
             },
             defaultInputTokenAddress() {
                 return tokensList().find(t => t.symbol.toLowerCase() === "metric").address
