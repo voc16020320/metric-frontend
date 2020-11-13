@@ -50,7 +50,6 @@
 #token-selector table {
     color: var(--token-selector-table-text-color);
     border-collapse: collapse;
-    font-size: 14px;
     margin-top: 30px;
     width: 100%;
 }

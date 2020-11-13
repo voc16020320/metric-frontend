@@ -6,9 +6,12 @@ html, body {
     background: var(--main-background-color);
     font-family: 'Roboto Mono', monospace;
     color: var(--main-text-color);
-    font-size: 14px;
     width: 100%;
     min-height: 100vh;
+}
+
+* {
+    font-size: 13px;
 }
 
 body {
@@ -17,8 +20,8 @@ body {
     margin: 0;
     padding: 0;
     padding-bottom: 120px;
-    padding-top:50px;
-    width:100%;
+    padding-top: 0;
+    width: 100%;
 }
 
 a {
