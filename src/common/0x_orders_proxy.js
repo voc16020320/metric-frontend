@@ -101,11 +101,7 @@ async function tryMatchOrder(order) {
 
         let gasPriceWei = await getFastGasPriceInWei()
         let protocolFeeMultiplier = await contractWrapper.exchange.protocolFeeMultiplier().callAsync()
-        let callData = {
-            from: accountAddress(),
-            gasPrice: gasPriceWei,
-            value: gasPriceWei * protocolFeeMultiplier.toNumber() * candidateFillOrders.length
-        }
+
 
         let fillOrderFunction =
             await contractWrapper
@@ -116,6 +112,13 @@ async function tryMatchOrder(order) {
                     candidateFillOrdersSignatures
                 )
 
+        let gas = await fillOrderFunction.estimateGasAsync({from: accountAddress()})
+        let callData = {
+            from: accountAddress(),
+            gas: gas,
+            gasPrice: gasPriceWei,
+            value: gasPriceWei * protocolFeeMultiplier.toNumber() * candidateFillOrders.length
+        }
         let fillResults = await fillOrderFunction.callAsync(callData)
         let receipt = await fillOrderFunction.awaitTransactionSuccessAsync(callData);
 

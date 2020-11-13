@@ -3,7 +3,7 @@ import {fetchJson} from "./json_api_fetch";
 export async function getFastGasPriceInWei() {
     let fastGasPrice = await getEtherChainFasGasPriceInWei()
     let standardsGasPrice = await getDefaultGasPriceInWei()
-    return Math.max(fastGasPrice, standardsGasPrice * 1.25)
+    return Math.max(fastGasPrice, Math.round(standardsGasPrice * 1.25))
 }
 
 async function getEtherChainFasGasPriceInWei() {
