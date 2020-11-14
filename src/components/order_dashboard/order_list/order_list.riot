@@ -42,7 +42,7 @@
     <script>
         import './order_list.css'
         import Loader from '../../loader/loader.riot'
-        import {accountAddress} from "../../../common/wallet_manager";
+        import {accountAddress, isWalletConnected} from "../../../common/wallet_manager";
         import {
             getBaseToken,
             getOrderBookAsks,
@@ -104,23 +104,31 @@
                 this.state.inputToken = getBaseToken()
                 this.state.outputToken = getQuoteToken()
 
-                this.state.asks =
-                    getOrderBookAsks(false)
-                        .filter(order => {
-                            return order.order.makerAddress.toLowerCase() === accountAddress().toLowerCase() ||
-                                order.order.takerAddress.toLowerCase() === accountAddress().toLowerCase()
-                        })
+                if (isWalletConnected()) {
 
-                this.state.bids =
-                    getOrderBookBids(false)
-                        .filter(order => {
-                            return order.order.makerAddress.toLowerCase() === accountAddress().toLowerCase() ||
-                                order.order.takerAddress.toLowerCase() === accountAddress().toLowerCase()
-                        })
+                    this.state.asks =
+                        getOrderBookAsks(false)
+                            .filter(order => {
+                                return order.order.makerAddress.toLowerCase() === accountAddress().toLowerCase() ||
+                                    order.order.takerAddress.toLowerCase() === accountAddress().toLowerCase()
+                            })
+
+                    this.state.bids =
+                        getOrderBookBids(false)
+                            .filter(order => {
+                                return order.order.makerAddress.toLowerCase() === accountAddress().toLowerCase() ||
+                                    order.order.takerAddress.toLowerCase() === accountAddress().toLowerCase()
+                            })
+
+                } else {
+                    this.state.asks = []
+                    this.state.bids = []
+                }
 
                 await this.update({
                     isLoadingOrders: false
                 })
+
             },
 
             async cancelOrder(e) {

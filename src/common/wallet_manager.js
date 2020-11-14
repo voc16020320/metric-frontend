@@ -7,6 +7,10 @@ let defaultWSUrl = "wss://mainnet.infura.io/ws/v3/12522e5176814bfda74dd672929641
 
 export let walletAddress = undefined
 
+export function registerForWalletChanges(item) {
+    walletEventListeners.push(item)
+}
+
 export function accountAddress() { return walletAddress }
 
 export function isWalletConnected() {
@@ -14,7 +18,7 @@ export function isWalletConnected() {
 }
 
 export async function initWeb3() {
-    if (typeof Web3.givenProvider !== "undefined") {
+    if (Web3.givenProvider !== undefined && Web3.givenProvider !== null) {
 
         window.web3 = new Web3(Web3.givenProvider)
         await connectWallet();
@@ -23,17 +27,14 @@ export async function initWeb3() {
             updateAccountAddress(accounts)
         })
 
-        console.log('connected wallet');
-
     } else {
-        walletAddress = "0x0000000000000000000000000000000000000000"
         window.web3 = new Web3(new Web3.providers.WebsocketProvider(defaultWSUrl))
     }
 
 }
 
 export async function connectWallet() {
-    if (Web3.givenProvider !== undefined) {
+    if (Web3.givenProvider !== undefined && Web3.givenProvider !== null) {
 
         await Web3.givenProvider.enable().catch(error => {
             console.error(error)
@@ -46,6 +47,7 @@ export async function connectWallet() {
 
 export function updateAccountAddress(accounts) {
     walletAddress = accounts[0]
+    walletEventListeners.forEach(item => item.onWalletChanges())
 }
 
 export function getProvider() {
@@ -72,3 +74,4 @@ export async function getContractWrapper() {
 
 let providerEngine = null
 let contractWrapper = null
+let walletEventListeners = []

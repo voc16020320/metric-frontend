@@ -11,7 +11,7 @@
 
     <script>
         import './blocky.css'
-        import Web3 from 'web3'
+        import {accountAddress, registerForWalletChanges} from "../../../common/wallet_manager";
 
         let blocky;
 
@@ -26,11 +26,12 @@
             },
 
             onMounted() {
-                Web3.givenProvider.on("accountsChanged", (accounts) => {
-                    this.updateAccountAddress(accounts)
-                    this.handleAccounts()
-                    this.update()
-                });
+                registerForWalletChanges(this)
+            },
+
+            onWalletChanges() {
+                this.handleAccounts()
+                this.update()
             },
 
             handleAccounts() {
@@ -39,8 +40,8 @@
                     this.removeBlocky();
                 }
 
-                if (this.accountAddress() !== undefined) {
-                    this.state.obfuscatedAccount = this.accountAddress().substr(0, 8) + '...' + this.accountAddress().substr(38, 40);
+                if (accountAddress() !== undefined) {
+                    this.state.obfuscatedAccount = accountAddress().substr(0, 8) + '...' + accountAddress().substr(38, 40);
                 }
 
                 // Doesn't match light theme so removed for now

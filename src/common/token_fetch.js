@@ -1,6 +1,6 @@
 import EthIcon from './eth.png'
 import HypeIcon from './hype.png'
-import { accountAddress } from "./wallet_manager";
+import {accountAddress, isWalletConnected} from "./wallet_manager";
 import {Erc20ContractProxy} from "./erc20_contract_proxy";
 import {fetchJson} from "./json_api_fetch";
 import {fetch0xAllowanceForToken} from "./0x_orders_proxy";
@@ -78,11 +78,13 @@ async function fetchTokenBalance(token) {
 
     let tokenBalance = 0
 
-    if (token.symbol.toLowerCase() === "eth") {
-        tokenBalance = formatAmount(await window.web3.eth.getBalance(accountAddress()))
-    } else {
-        let contract = Erc20ContractProxy.erc20Contract(token.address)
-        tokenBalance = formatAmount(await contract.methods.balanceOf(accountAddress()).call())
+    if (isWalletConnected()) {
+        if (token.symbol.toLowerCase() === "eth") {
+            tokenBalance = formatAmount(await window.web3.eth.getBalance(accountAddress()))
+        } else {
+            let contract = Erc20ContractProxy.erc20Contract(token.address)
+            tokenBalance = formatAmount(await contract.methods.balanceOf(accountAddress()).call())
+        }
     }
 
     return formatAmount(tokenBalance) / (10**token.decimals)
@@ -92,9 +94,11 @@ async function fetchTokenAllowance(token) {
 
     let tokenAllowance = 0
 
-    if (token.symbol.toLowerCase() !== "eth") {
-        if (token.balance > 0) {
-            tokenAllowance = await fetch0xAllowanceForToken(token.address)
+    if (isWalletConnected()) {
+        if (token.symbol.toLowerCase() !== "eth") {
+            if (token.balance > 0) {
+                tokenAllowance = await fetch0xAllowanceForToken(token.address)
+            }
         }
     }
 

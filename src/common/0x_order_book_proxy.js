@@ -1,8 +1,7 @@
 import {HttpClient} from "@0x/connect";
-import {accountAddress, getContractWrapper, getProvider} from "./wallet_manager";
+import {getProvider} from "./wallet_manager";
 import {BigNumber, providerUtils} from "@0x/utils";
 import {isTokenAmountOverLimit, tokensList} from "./token_fetch";
-import {fetchTokenAllowance, fetchTokenBalance} from "./erc20_contract_proxy";
 import {getContractAddressesForChainOrThrow} from "@0x/contract-addresses";
 
 export function registerForOrderBookUpdateEvents(object) {
@@ -81,16 +80,12 @@ async function updateOrderBook() {
 }
 
 async function getOrdersMatching(baseTokenAddress, quoteTokenAddress) {
-    let contractWrapper = await getContractWrapper()
 
     let baseToken = tokensList().find(t => t.address === baseTokenAddress)
     let quoteToken = tokensList().find(t => t.address === quoteTokenAddress)
 
-    const baseAssetData =
-        await contractWrapper.devUtils.encodeERC20AssetData(baseToken.address).callAsync();
-
-    const quoteAssetData =
-        await contractWrapper.devUtils.encodeERC20AssetData(quoteToken.address).callAsync();
+    const baseAssetData = `0xf47261b0000000000000000000000000${baseToken.address.substr(2).toLowerCase()}`
+    const quoteAssetData = `0xf47261b0000000000000000000000000${quoteToken.address.substr(2).toLowerCase()}`
 
     let orders = await relayClient.getOrderbookAsync(
         {
