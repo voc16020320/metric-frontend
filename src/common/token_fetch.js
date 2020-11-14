@@ -111,7 +111,7 @@ function formatAmount(amount) {
 
 export async function loadTokenList()
 {
-    await fetchJson("https://raw.githubusercontent.com/pro-blockchain-com/uniswap-token-list/4de4a4cfd348f7a745e7fec4ae8653e7f8e7d48d/tokens.1inch.eth.link.2020-09-05.json")
+    await fetchJson("https://tokens.coingecko.com/uniswap/all.json")
         .then(json => {
             if (json.tokens !== undefined) {
                 return Array.from(json.tokens)
