@@ -30,13 +30,13 @@ a {
 
 .notice {
     text-align: center;
-    width: 400px;
-    left: 50%;
-    margin-left: -200px;
-    display: block;
-    top: 90px;
+    width: 100%;
+    top: 50px;
+    padding-bottom: 7px;
     position: fixed;
-    color: #337263;
+    z-index: 1000;
+    color: var(--token-selector-table-text-color);
+    background-color: var(--main-background-color);
 }
 
 .header {
