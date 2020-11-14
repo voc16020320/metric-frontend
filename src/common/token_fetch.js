@@ -4,6 +4,8 @@ import {accountAddress, isWalletConnected} from "./wallet_manager";
 import {Erc20ContractProxy} from "./erc20_contract_proxy";
 import {fetchJson} from "./json_api_fetch";
 import {fetch0xAllowanceForToken} from "./0x_orders_proxy";
+import {CustomTokenManager} from "./tokens/CustomsTokenManager";
+import {Token} from "./tokens/token";
 
 
 export function registerForTokenListUpdate(item) {
@@ -158,14 +160,36 @@ export async function addTokenWithAddress(address) {
         token.allowance = 0
         token.volume_limit = -1
 
+        customTokensManager.addToken(new Token(token.symbol, token.address, token.decimals))
+
         addToken(token)
+
+        register.map(item => item.onTokenListUpdate())
+
     } catch (e) {
         console.log(e.message)
         console.log("Invalid token address:", address)
     }
 }
 
-let tokens = [
+function initTokenList() {
+    let tokens = defaultTokens
+    customTokensManager.init()
+    customTokensManager.customtokens.tokens.forEach(t => {
+        tokens.push({
+            balance: t.balance,
+            allowance: 0,
+            address: t.address,
+            symbol: t.symbol,
+            decimals: t.decimals,
+            logoURI: t.logoURI,
+            volume_limit: -1
+        })
+    })
+
+    return tokens
+}
+let defaultTokens = [
     {
         address: "0x6e36556b3ee5aa28def2a8ec3dae30ec2b208739",
         decimals: 18,
@@ -180,7 +204,7 @@ let tokens = [
         address: "0xEfc1C73A3D8728Dc4Cf2A18ac5705FE93E5914AC",
         decimals: 18,
         symbol: "METRIC",
-        logoURI: "https://etherscan.io/images/main/empty-token.png",
+        logoURI: "https://etherscan.io/token/images/metric_32.png",
         balance: 0,
         allowance: 0,
         volume_limit: -1,
@@ -200,7 +224,7 @@ let tokens = [
         address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         decimals: 18,
         symbol: "DAI",
-        logoURI: "https://1inch.exchange/assets/tokens/0x6b175474e89094c44da98b954eedeac495271d0f.png",
+        logoURI: "https://etherscan.io/token/images/MCDDai_32.png",
         balance: 0,
         allowance: 0,
         volume_limit: 10,
@@ -217,7 +241,10 @@ let tokens = [
         disabled: false
     }
 ]
+let customTokensManager = new CustomTokenManager()
 
+let tokens = initTokenList()
 let register = []
 let balancesRegister = []
 let allowancesRegister = []
+
