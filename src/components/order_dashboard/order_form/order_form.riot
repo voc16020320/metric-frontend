@@ -1,42 +1,44 @@
 <order-form>
 
-    <div class="order-line token-selector button clickable-button" onclick={ openTokenSelector }>{ state.inputToken.symbol } ˅</div>
+    <div id="order-form">
+        <div class="order-line token-selector button clickable-button" onclick={ openTokenSelector }>{ state.inputToken.symbol } ˅</div>
 
-    <div class="order-line order-buttons">
-        <div id="buy-button" class="buy-button button clickable-button" onclick={ setBuyOrderType }>Buy</div>
-        <div id="sell-button" class="sell-button button clickable-button" onclick={ setSellOrderType }>Sell</div>
-    </div>
+        <div class="order-line order-buttons">
+            <div id="buy-button" class="buy-button button clickable-button" onclick={ setBuyOrderType }>Buy</div>
+            <div id="sell-button" class="sell-button button clickable-button" onclick={ setSellOrderType }>Sell</div>
+        </div>
 
-    <div class="order-line">Amount</div>
-    <div class="order-line order-input">
-        <input type="number" onkeyup={ updateAmount } placeholder="0"/>
-        <label>{ state.inputToken.symbol }</label>
-    </div>
+        <div class="order-line">Amount</div>
+        <div class="order-line order-input">
+            <input type="number" onkeyup={ updateAmount } placeholder="0"/>
+            <label>{ state.inputToken.symbol }</label>
+        </div>
 
-    <div class="order-line">Price</div>
-    <div class="order-line order-input">
-        <input type="number" onkeyup={ updatePrice } placeholder="0"/>
-        <label>{ state.outputToken.symbol }</label>
-    </div>
+        <div class="order-line">Price</div>
+        <div class="order-line order-input">
+            <input type="number" onkeyup={ updatePrice } placeholder="0"/>
+            <label>{ state.outputToken.symbol }</label>
+        </div>
 
-    <div class="order-line order-info">
-        <div>Fee</div>
-        <label>{ formattedFeeAmount() } { state.outputToken.symbol }</label>
-    </div>
-    <div class="order-line order-info">
-        <div>Total</div>
-        <label>{ formattedTotalAmount() } { state.outputToken.symbol }</label>
-    </div>
+        <div class="order-line order-info">
+            <div>Fee</div>
+            <label>{ formattedFeeAmount() } { state.outputToken.symbol }</label>
+        </div>
+        <div class="order-line order-info">
+            <div>Total</div>
+            <label>{ formattedTotalAmount() } { state.outputToken.symbol }</label>
+        </div>
 
-    <div id ="place-order-button" class="order-line button">
-        { state.submitMessage }
-    </div>
+        <div id ="place-order-button" class="order-line button">
+            { state.submitMessage }
+        </div>
 
-    <div id="token-selector-box" style="display:none" }>
-        <token-selector
-                closeTokenSelector={ closeTokenSelector }
-                selectToken={ selectToken }
-        />
+        <div id="token-selector-box" style="display:none" }>
+            <token-selector
+                    closeTokenSelector={ closeTokenSelector }
+                    selectToken={ selectToken }
+            />
+        </div>
     </div>
 
     <script>
@@ -95,15 +97,30 @@
                 registerForTokenAllowancesUpdate(this)
                 await this.setBuyOrderType()
             },
+            listenToSelectorCloseClick(e) {
+                if(this.state.showTokenSelector) {
+                    let selector = document.getElementById('token-selector-box');
+                    let formSelector = document.getElementById('order-form');
+
+                    if (selector !== null && !selector.contains(e.target) &&
+                        formSelector !== null && !formSelector.contains(e.target)) {
+                        this.closeTokenSelector();
+                    }
+                }
+            },
             async onTokenAllowancesUpdate() {
                 this.update()
             },
             closeTokenSelector() {
+                this.state.showTokenSelector = false
                 document.getElementById("token-selector-box").style.display = "none"
+                document.removeEventListener('click', this.listenToSelectorCloseClick)
             },
             openTokenSelector() {
+                document.addEventListener('click', this.listenToSelectorCloseClick)
                 document.getElementById("token-selector-box").style.display = "block"
                 document.getElementById("token-selector-input-text").focus()
+                this.state.showTokenSelector = true
             },
             async selectToken(token) {
                 router.push(`/#/${token.address}`)
