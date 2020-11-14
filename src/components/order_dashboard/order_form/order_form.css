@@ -10,6 +10,15 @@
     top: 0;
 }
 
+.order-param-values {
+    display: grid;
+    grid-template-columns: 50% 50%;
+}
+
+.order-param-values .wallet-amount {
+    text-align: right;
+}
+
 .order-form .button {
     background: var(--inactive-button-background-color);
     width: 100%;

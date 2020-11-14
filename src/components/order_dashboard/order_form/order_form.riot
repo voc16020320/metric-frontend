@@ -8,13 +8,19 @@
             <div id="sell-button" class="sell-button button clickable-button" onclick={ setSellOrderType }>Sell</div>
         </div>
 
-        <div class="order-line">Amount</div>
+        <div class="order-line order-param-values">
+            <div>Amount</div>
+            <div class="wallet-amount">Wallet: { formatWalletBalance(state.inputToken.balance) } </div>
+        </div>
         <div class="order-line order-input">
             <input type="number" onkeyup={ updateAmount } placeholder="0"/>
             <label>{ state.inputToken.symbol }</label>
         </div>
 
-        <div class="order-line">Price</div>
+        <div class="order-line order-param-values">
+            <div>Price</div>
+            <div class="wallet-amount">Wallet: { formatWalletBalance(state.outputToken.balance) } </div>
+        </div>
         <div class="order-line order-input">
             <input type="number" onkeyup={ updatePrice } placeholder="0"/>
             <label>{ state.outputToken.symbol }</label>
@@ -45,7 +51,11 @@
 
         import './order_form.css'
         import TokenSelector from '../../token_selector/token_selector.riot'
-        import {registerForTokenAllowancesUpdate, tokensList} from "../../../common/token_fetch";
+        import {
+            registerForTokenAllowancesUpdate,
+            registerForTokenBalancesUpdate,
+            tokensList
+        } from "../../../common/token_fetch";
         import {
             setBaseToken,
             setQuoteToken
@@ -95,6 +105,7 @@
             },
             async onMounted() {
                 registerForTokenAllowancesUpdate(this)
+                registerForTokenBalancesUpdate(this)
                 await this.setBuyOrderType()
             },
             listenToSelectorCloseClick(e) {
@@ -108,7 +119,10 @@
                     }
                 }
             },
-            async onTokenAllowancesUpdate() {
+            onTokenAllowancesUpdate() {
+                this.update()
+            },
+            onTokenBalancesUpdate() {
                 this.update()
             },
             closeTokenSelector() {
@@ -304,6 +318,9 @@
                 }
 
                 return balance > (amount + this.applyFee(amount))
+            },
+            formatWalletBalance(amount) {
+                return new BigNumber(amount).toFixed(3, BigNumber.ROUND_DOWN)
             }
         }
 
