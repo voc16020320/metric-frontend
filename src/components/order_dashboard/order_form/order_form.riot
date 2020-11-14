@@ -22,7 +22,7 @@
             <div class="wallet-amount">Wallet: { formatWalletBalance(state.outputToken.balance) } </div>
         </div>
         <div class="order-line order-input">
-            <input type="number" onkeyup={ updatePrice } placeholder="0"/>
+            <input id="order-price-input" type="number" onkeyup={ updatePrice } placeholder="0"/>
             <label>{ state.outputToken.symbol }</label>
         </div>
 
@@ -64,6 +64,7 @@
         import { BigNumber } from '@0x/utils';
         import {calculateMetricFee, MetricReferralAddress} from "../../../common/metric_fee";
         import { router } from '@riotjs/route'
+        import {registerForOrderPriceUpdates} from "../../../common/prices/OrderPriceManager";
 
         export default {
             components: {
@@ -84,6 +85,8 @@
             },
             onBeforeMount(props) {
                 this.state.orderType = this.config.buyOrderType
+
+                registerForOrderPriceUpdates(this)
 
                 if (props.tokenAddress !== undefined && props.tokenAddress !== null) {
                     let tokenFromRoute =
@@ -107,6 +110,11 @@
                 registerForTokenAllowancesUpdate(this)
                 registerForTokenBalancesUpdate(this)
                 await this.setBuyOrderType()
+            },
+            onOrderPriceUpdate(price) {
+                this.state.price = price
+                document.getElementById("order-price-input").value = price
+                this.updateSubmitButtonState()
             },
             listenToSelectorCloseClick(e) {
                 if(this.state.showTokenSelector) {

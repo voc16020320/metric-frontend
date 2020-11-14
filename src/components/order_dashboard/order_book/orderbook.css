@@ -26,6 +26,11 @@
     color: #CC3F3F;
 }
 
+.order:hover {
+    background-color: var(--main-background-color);
+    cursor: pointer;
+}
+
 .orders thead th {
     position: -webkit-sticky;
     position: sticky;

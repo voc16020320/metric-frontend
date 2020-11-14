@@ -1,7 +1,7 @@
 <order-book>
     <loader class="order-book-loader" if={ state.isLoadingOrders }/>
     <div id="order-table-canvas" onscroll={ disableScrollToView } if={ !state.isLoadingOrders }>
-        <table class="orders">
+        <table class="orders" cellspacing="0">
             <thead class="order-book-columns">
             <tr id="order-book-header">
                 <th>Amount { state.inputToken.symbol }</th>
@@ -10,17 +10,17 @@
             </tr>
             </thead>
             <tbody>
-            <tr each={ask in state.asks} class="ask">
+            <tr each={ask in state.asks} class="ask order" onclick={ setOrderPrice }>
                 <td>{ ask.volumeTaker.toFixed(config.displayedDecimalPoints) }</td>
                 <td>{ ask.price }</td>
                 <td>{ ask.volumeMaker.toFixed(config.displayedDecimalPoints) }</td>
             </tr>
             <tr id="orders-separator">
-                <td></td>
+                <td/>
                 <td>{ state.midMarketPrice }</td>
-                <td></td>
+                <td/>
             </tr>
-            <tr each={bid in state.bids} class="bid">
+            <tr each={bid in state.bids} class="bid order" onclick={ setOrderPrice }>
                 <td>{ bid.volumeTaker.toFixed(config.displayedDecimalPoints) }</td>
                 <td>{ bid.price }</td>
                 <td>{ bid.volumeMaker.toFixed(config.displayedDecimalPoints) }</td>
@@ -42,6 +42,7 @@
 
         import {BigNumber} from '@0x/utils';
         import {getTokenUsdPrice} from "../../../common/token_price_proxy";
+        import {updateOrderPrice} from "../../../common/prices/OrderPriceManager";
 
         export default {
             components: {
@@ -162,7 +163,6 @@
                     return (baseTokenUsdPrice / quoteTokenUsdPrice).toFixed(this.config.displayedDecimalPoints)
                 }
             },
-
             scrollOrderBookIntoView() {
                 let tableHeader = document.getElementById("order-book-header");
                 let orderBookSeparator = document.getElementById("orders-separator");
@@ -178,6 +178,10 @@
                         $(visibleOrderBookRegion).scrollTop(elemTop - containerHeight / 2);
                     }
                 }
+            },
+            setOrderPrice(e) {
+                let price = parseFloat(e.target.parentElement.cells[1].textContent)
+                updateOrderPrice(price)
             }
         }
 
