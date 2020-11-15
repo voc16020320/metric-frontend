@@ -28,15 +28,20 @@
     border-radius: 3px;
 }
 
-.order-form .token-selector {
-    margin-bottom: 34px;
-}
-
 .order-buttons {
     display: grid;
     grid-template-columns: auto auto;
     place-content: stretch;
     justify-items: center;
+    margin-bottom: 40px;
+}
+
+.order-inputs {
+    display: grid;
+    grid-template-columns: 45% 45%;
+    place-content: stretch;
+    justify-items: center;
+    grid-gap: 10%;
 }
 
 .order-info {

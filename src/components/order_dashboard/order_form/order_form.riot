@@ -1,7 +1,11 @@
 <order-form>
 
     <div id="order-form">
-        <div class="order-line token-selector button clickable-button" onclick={ openTokenSelector }>{ state.inputToken.symbol } ˅</div>
+    
+        <div class="order-line order-inputs">
+           <div class="token-selector button clickable-button" onclick={ openInputTokenSelector }>{ state.inputToken.symbol } ˅</div>
+           <div class="token-selector button clickable-button" onclick={ openOutputTokenSelector }>{ state.outputToken.symbol } ˅</div>
+        </div>
 
         <div class="order-line order-buttons">
             <div id="buy-button" class="buy-button button clickable-button" onclick={ setBuyOrderType }>Buy</div>
@@ -87,22 +91,29 @@
                 this.state.orderType = this.config.buyOrderType
 
                 registerForOrderPriceUpdates(this)
+                
+                if (props.inputTokenAddress !== undefined && props.inputTokenAddress !== null) {
 
-                if (props.tokenAddress !== undefined && props.tokenAddress !== null) {
                     let tokenFromRoute =
-                        tokensList().find(t => t.address.toLowerCase() === props.tokenAddress.toLowerCase())
+                        tokensList().find(t => t.address.toLowerCase() === props.inputTokenAddress.toLowerCase())
 
                     if (tokenFromRoute !== undefined && tokenFromRoute !== null) {
                         this.state.inputToken = tokenFromRoute
-                        router.push(`/#/${this.state.inputToken.address}`)
                         setBaseToken(this.state.inputToken)
                     }
                 }
 
-                this.state.outputToken =
-                    tokensList().find(t => t.symbol.toLowerCase() === "dai")
+                if (props.outputTokenAddress !== undefined && props.outputTokenAddress !== null) {
+                    let tokenFromRoute =
+                        tokensList().find(t => t.address.toLowerCase() === props.outputTokenAddress.toLowerCase())
 
-                setQuoteToken(this.state.outputToken)
+                    if (tokenFromRoute !== undefined && tokenFromRoute !== null) {
+                        this.state.outputToken = tokenFromRoute
+                        setQuoteToken(this.state.outputToken)
+                    }
+                }
+
+                router.push(`/#/${this.state.inputToken.address}/${this.state.outputToken.address}`)
 
                 this.setOrderMessage()
             },
@@ -138,6 +149,14 @@
                 document.getElementById("token-selector-box").style.display = "none"
                 document.removeEventListener('click', this.listenToSelectorCloseClick)
             },
+            openInputTokenSelector() {
+                this.state.selectionType = "input"
+                this.openTokenSelector()
+            },
+            openOutputTokenSelector() {
+                this.state.selectionType = "output"
+                this.openTokenSelector()
+            },
             openTokenSelector() {
                 document.addEventListener('click', this.listenToSelectorCloseClick)
                 document.getElementById("token-selector-box").style.display = "block"
@@ -145,10 +164,15 @@
                 this.state.showTokenSelector = true
             },
             async selectToken(token) {
-                router.push(`/#/${token.address}`)
+                if (this.state.selectionType === "input") {
+                    await setBaseToken(token)
+                    this.state.inputToken = token
+                } else {
+                    await setQuoteToken(token)
+                    this.state.outputToken = token
+                }
 
-                await setBaseToken(token)
-                this.state.inputToken = token
+                router.push(`/#/${this.state.inputToken.address}/${this.state.outputToken.address}`)
 
                 this.setOrderMessage()
                 this.update()

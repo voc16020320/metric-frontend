@@ -33,11 +33,14 @@
       <swap if={ !isOrderBookFeatureEnabled() }/>
 
       <router if={ isOrderBookFeatureEnabled() }>
-          <route path="/#/:address">
-              <order-dashboard token-address={ route.params.address } />
+          <route path="/#/:inputAddress/:outputAddress">
+              <order-dashboard input-token-address={ route.params.inputAddress } output-token-address={ route.params.outputAddress }/>
+          </route>
+          <route path="/#/:inputAddress">
+              <order-dashboard input-token-address={ route.params.inputAddress } output-token-address={ defaultOutputTokenAddress() }/>
           </route>
           <route path="/">
-              <order-dashboard token-address={ defaultInputTokenAddress() } />
+              <order-dashboard input-token-address={ defaultInputTokenAddress() } output-token-address={ defaultOutputTokenAddress() }/>
           </route>
       </router>
     </div>
@@ -88,7 +91,6 @@
                 synchronizeOrderBook()
 
                 if (this.isOrderBookFeatureEnabled()) {
-                    disableToken("DAI")
                     disableToken("ETH")
                 }
 
@@ -101,6 +103,9 @@
             },
             defaultInputTokenAddress() {
                 return tokensList().find(t => t.symbol.toLowerCase() === "metric").address
+            },
+            defaultOutputTokenAddress() {
+                return tokensList().find(t => t.symbol.toLowerCase() === "dai").address
             }
         }
     </script>

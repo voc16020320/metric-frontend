@@ -160,7 +160,11 @@
                     let baseTokenUsdPrice = await getTokenUsdPrice(this.state.inputToken.address, this.state.inputToken.symbol)
                     let quoteTokenUsdPrice = await getTokenUsdPrice(this.state.outputToken.address, this.state.outputToken.symbol)
 
-                    return (baseTokenUsdPrice / quoteTokenUsdPrice).toFixed(this.config.displayedDecimalPoints)
+                    if (baseTokenUsdPrice > 0 && quoteTokenUsdPrice > 0) {
+                        return (baseTokenUsdPrice / quoteTokenUsdPrice).toFixed(this.config.displayedDecimalPoints)
+                    } else {
+                        return ""
+                    }
                 }
             },
             scrollOrderBookIntoView() {

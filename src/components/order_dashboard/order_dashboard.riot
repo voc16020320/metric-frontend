@@ -1,9 +1,9 @@
 <order-dashboard>
 
-    <div class="dashboard" if={ inputTokenAvailable() }>
+    <div class="dashboard" if={ tokensAvailable() }>
 
         <div class="order-form">
-            <order-form token-address={ state.tokenAddress } />
+            <order-form input-token-address={ state.inputTokenAddress } output-token-address={ state.outputTokenAddress } />
         </div>
 
         <div class="order-book">
@@ -34,21 +34,31 @@
                 OrderList
             },
             state: {
-                tokenAddress: null
+                inputTokenAddress: null,
+                outputTokenAddress: null
             },
             onBeforeMount(props) {
                 registerForTokenListUpdate(this)
-                this.state.tokenAddress = props.tokenAddress
+                this.state.inputTokenAddress = props.inputTokenAddress
+                this.state.outputTokenAddress = props.outputTokenAddress
             },
-            inputTokenAvailable() {
-                return findTokenWithAddress(this.state.tokenAddress) !== undefined
+            tokensAvailable() {
+                return findTokenWithAddress(this.state.inputTokenAddress) !== undefined &&
+                    findTokenWithAddress(this.state.outputTokenAddress) !== undefined
             },
             async onTokenListUpdate() {
-                let token = await findOrAddTokenWithAddress(this.state.tokenAddress)
+                let token = await findOrAddTokenWithAddress(this.state.inputTokenAddress)
                 if (token !== undefined) {
-                    this.state.tokenAddress = token.address
+                    this.state.inputTokenAddress = token.address
                 } else {
-                    this.state.tokenAddress = tokensList().find(t => t.symbol.toLowerCase() === "metric").address
+                    this.state.inputTokenAddress = tokensList().find(t => t.symbol.toLowerCase() === "metric").address
+                }
+
+                token = await findOrAddTokenWithAddress(this.state.outputTokenAddress)
+                if (token !== undefined) {
+                    this.state.outputTokenAddress = token.address
+                } else {
+                    this.state.outputTokenAddress = tokensList().find(t => t.symbol.toLowerCase() === "metric").address
                 }
                 this.update()
             }
