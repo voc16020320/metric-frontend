@@ -174,8 +174,7 @@
 
                 router.push(`/#/${this.state.inputToken.address}/${this.state.outputToken.address}`)
 
-                this.setOrderMessage()
-                this.update()
+                this.refreshOrderMessage()
 
                 this.closeTokenSelector()
             },
@@ -188,7 +187,6 @@
                 this.updateSubmitButtonState()
             },
             updateSubmitButtonState() {
-                this.setOrderMessage()
                 let button = document.getElementById("place-order-button")
                 if (!this.isValidOrder() || !this.isSufficientBalance()) {
                     button.classList.remove("active-button")
@@ -199,38 +197,56 @@
                     button.classList.add("clickable-button")
                     button.onclick = this.checkApprovalAndSubmitOrder
                 }
-                this.update()
+                this.refreshOrderMessage()
             },
             async setBuyOrderType() {
                 this.state.orderType = this.config.buyOrderType
                 document.getElementById("sell-button").classList.remove("active-button")
                 document.getElementById("buy-button").classList.remove("active-button")
                 document.getElementById("buy-button").classList.add("active-button")
-                this.setOrderMessage()
-                this.update()
+                this.updateSubmitButtonState()
             },
             async setSellOrderType() {
                 this.state.orderType = this.config.sellOrderType
                 document.getElementById("sell-button").classList.remove("active-button")
                 document.getElementById("buy-button").classList.remove("active-button")
                 document.getElementById("sell-button").classList.add("active-button")
-                this.setOrderMessage()
-                this.update()
+                this.updateSubmitButtonState()
             },
             async checkApprovalAndSubmitOrder() {
-                let isApproved = await this.isApproved()
-
-                if (!isApproved) {
-                    await this.requestApproval()
-                    isApproved = await this.isApproved()
+                if (await this.isApproved()) {
+                    await this.sendOrder()
+                } else {
+                    await this.requestApprovalAndSubmitOrder()
                 }
-                if (isApproved) {
-                    await ZeroXOrdersProxy.submitOrder(
-                        this.buildOrder(),
-                        MetricReferralAddress,
-                        calculateMetricFee()
-                    )
+                this.refreshOrderMessage()
+            },
+            async requestApprovalAndSubmitOrder() {
+                if (this.isBuyOrder()) {
+                    await this.sendApprovalForTokenAndSubmitOrder(this.state.outputToken)
+                } else {
+                    await this.sendApprovalForTokenAndSubmitOrder(this.state.inputToken)
                 }
+            },
+            async sendApprovalForTokenAndSubmitOrder(token) {
+                this.setApprovalMessage(token)
+                await ZeroXOrdersProxy.approveZeroXAllowance(
+                    token.address,
+                    async (a, b) => {
+                        this.refreshOrderMessage()
+                        await this.sendOrder()
+                    },
+                    (e) => {
+                        this.refreshOrderMessage()
+                    }
+                )
+            },
+            async sendOrder() {
+                await ZeroXOrdersProxy.submitOrder(
+                    this.buildOrder(),
+                    MetricReferralAddress,
+                    calculateMetricFee()
+                )
             },
             buildOrder() {
                 let inputAmount = this.inputAmount() * (10 ** this.state.inputToken.decimals)
@@ -285,25 +301,6 @@
                     return await ZeroXOrdersProxy.is0xApprovedForToken(this.state.inputToken.address, this.inputAmount() * (10 ** this.state.inputToken.decimals))
                 }
             },
-            requestApproval() {
-                if (this.isBuyOrder()) {
-                    this.sendApprovalForToken(this.state.outputToken)
-                } else {
-                    this.sendApprovalForToken(this.state.inputToken)
-                }
-            },
-            sendApprovalForToken(token) {
-                this.setApprovalMessage(token)
-                ZeroXOrdersProxy.approveZeroXAllowance(
-                    token.address,
-                    (a, b) => {
-                        this.setOrderMessage()
-                    },
-                    (e) => {
-                        this.setOrderMessage()
-                    }
-                )
-            },
             setApprovalMessage(token) {
                 this.update({submitMessage: `APPROVING ${token.symbol}`})
             },
@@ -323,6 +320,10 @@
                 } else {
                     this.state.submitMessage = "PLACE ORDER"
                 }
+            },
+            refreshOrderMessage() {
+                this.setOrderMessage()
+                this.update()
             },
             maybeIsApproved() {
                 if (this.isBuyOrder()) {

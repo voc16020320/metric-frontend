@@ -10,8 +10,8 @@ export const OneSplitContactProxy = {
         return await Erc20ContractProxy.isAddressApprovedForToken(oneSplitAddress, address, amount)
     },
 
-    approveOneSplitForToken: function(address) {
-        Erc20ContractProxy.approveTokenForTargetAddress(
+    approveOneSplitForToken: async function(address) {
+        await Erc20ContractProxy.approveTokenForTargetAddress(
             address,
             oneSplitAddress,
             function (a,b) {},

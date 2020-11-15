@@ -3,7 +3,7 @@ import {orderFactory} from '@0x/order-utils/lib/src/order_factory';
 import {accountAddress, getContractWrapper, getProvider} from './wallet_manager'
 import {Erc20ContractProxy, fetchTokenAllowance} from "./erc20_contract_proxy";
 import {getBidsMatching, getReplayClient, zeroXContractAddresses} from "./0x_order_book_proxy";
-import {isTokenAmountOverLimit, tokensList} from "./token_fetch";
+import {isTokenAmountOverLimit, tokensList, updateTokenAllowance} from "./token_fetch";
 import {getFastGasPriceInWei} from "./gas_price_oracle";
 
 export const ZeroXOrdersProxy = {
@@ -15,10 +15,13 @@ export const ZeroXOrdersProxy = {
 
     approveZeroXAllowance: async function(tokenAddress, confirmationCallback, errorCallback) {
         let zeroXAllowanceTargetAddress = await zeroXContractAddresses().then(a => a.erc20Proxy)
-        Erc20ContractProxy.approveTokenForTargetAddress(
+        await Erc20ContractProxy.approveTokenForTargetAddress(
             tokenAddress,
             zeroXAllowanceTargetAddress,
-            confirmationCallback,
+            async (a, b) => {
+                updateTokenAllowance(tokenAddress, Erc20ContractProxy.maxAllowance.toNumber())
+                await confirmationCallback(a, b)
+            },
             errorCallback
         )
     },

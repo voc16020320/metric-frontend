@@ -42,6 +42,11 @@ export function findTokenWithAddress(address) {
 
 export function tokensList() { return tokens }
 
+export function updateTokenAllowance(address, allowance) {
+    let token = tokens.find(t => t.address.toLowerCase() === address.toLowerCase())
+    token.allowance = formatAmount(allowance / (10 ** token.decimals))
+}
+
 export async function fetchTokensAllowances() {
 
     await Promise.all(
