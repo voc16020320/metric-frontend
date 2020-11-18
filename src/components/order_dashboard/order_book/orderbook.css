@@ -42,6 +42,10 @@
     background: var(--token-selector-background-color);
 }
 
+.orders th,td {
+    width: 30%;
+}
+
 .order-book .order-book-loader {
     align-content: center;
 }
