@@ -4,9 +4,9 @@
         <table class="orders" cellspacing="0">
             <thead class="order-book-columns">
             <tr id="order-book-header">
-                <th>Amount { state.inputToken.symbol }</th>
-                <th>Price { state.outputToken.symbol }</th>
-                <th>Total { state.outputToken.symbol }</th>
+                <th>{ this.i18next.t('order.amount', { token: state.inputToken }) }</th>
+                <th>{ this.i18next.t('order.price', { token: state.outputToken }) }</th>
+                <th>{ this.i18next.t('order.total', { token: state.outputToken }) }</th>
             </tr>
             </thead>
             <tbody>

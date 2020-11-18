@@ -1,5 +1,5 @@
 <order-list>
-    <div class="order-list-title">MY ORDERS</div>
+    <div class="order-list-title">{ this.i18next.t('my_order_list.title') }</div>
     <div class="empty-order-list" if={ state.isLoadingOrders }>
         <loader />
     </div>
@@ -8,36 +8,34 @@
             <table class="my-orders">
                 <thead>
                 <tr>
-                    <th>Type</th>
-                    <th>Price { state.outputToken.symbol }</th>
-                    <th>Amount/Filled { state.inputToken.symbol }</th>
-                    <th class="order-list-big-screen-column">Total { state.outputToken.symbol } </th>
-                    <th class="order-list-big-screen-column">Expires in</th>
+                    <th>{ this.i18next.t('my_order_list.header.type') }</th>
+                    <th>{ this.i18next.t('order.price', { token: state.outputToken }) }</th>
+                    <th>{ this.i18next.t('my_order_list.header.amount_filled', { token: state.inputToken }) }</th>
+                    <th class="order-list-big-screen-column">{ this.i18next.t('order.total', {token: state.outputToken}) }</th>
+                    <th class="order-list-big-screen-column">{ this.i18next.t('my_order_list.header.expires_in') }</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr each={ order in state.asks } key={ order.metaData.orderHash } id={ order.metaData.orderHash }>
-                    <td>Sell</td>
+                    <td>{ this.i18next.t('order.type.sell') }</td>
                     <td>{ sellPrice(order) }</td>
                     <td>{ safeRound(order.order.makerAssetAmount.dividedBy(10 ** state.inputToken.decimals)) } / { safeRound(filledMakerAmount(order))}</td>
                     <td class="order-list-big-screen-column">{ safeRound(order.order.takerAssetAmount.dividedBy(10 ** state.outputToken.decimals)) }</td>
                     <td class="order-list-big-screen-column">{ getDateDiff(order.order.expirationTimeSeconds) }</td>
-                    <td class="cancel-order" onclick={ this.cancelOrder }>Cancel</td>
+                    <td class="cancel-order" onclick={ this.cancelOrder }>{ this.i18next.t('my_order_list.order.cancel') }</td>
                 </tr>
                 <tr each={ order in state.bids } key={ order.metaData.orderHash } id={ order.metaData.orderHash }>
-                    <td>Buy</td>
+                    <td>{ this.i18next.t('order.type.buy') }</td>
                     <td>{ buyPrice(order) }</td>
                     <td>{ safeRound(order.order.takerAssetAmount.dividedBy(10 ** state.inputToken.decimals)) } / { safeRound(filledTakerAmount(order)) }</td>
                     <td class="order-list-big-screen-column">{ safeRound(order.order.makerAssetAmount.dividedBy(10 ** state.outputToken.decimals)) }</td>
                     <td class="order-list-big-screen-column">{ getDateDiff(order.order.expirationTimeSeconds) }</td>
-                    <td class="cancel-order" onclick={ this.cancelOrder }>Cancel</td>
+                    <td class="cancel-order" onclick={ this.cancelOrder }>{ this.i18next.t('my_order_list.order.cancel') }</td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
-
-
 
     <script>
         import './order_list.css'

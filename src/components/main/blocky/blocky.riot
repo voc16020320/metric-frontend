@@ -7,7 +7,7 @@
         target="_blank">
         <span id="address">{ state.obfuscatedAccount }</span>
     </a>
-    <div id="wallet-connect" if={ !this.isWalletConnected() } onclick={ this.connectWallet }>Connect wallet</div>
+    <div id="wallet-connect" if={ !this.isWalletConnected() } onclick={ this.connectWallet }>{ this.i18next.t('wallet.connect_wallet') }</div>
 
     <script>
         import './blocky.css'

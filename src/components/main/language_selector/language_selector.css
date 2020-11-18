@@ -1,0 +1,33 @@
+
+.language-section {
+    display: grid;
+    grid-template-rows: auto auto;
+    justify-items: left;
+    padding-bottom: 10px;
+    padding-top: 10px;
+}
+
+.language-selection-line{
+    padding-left: 15px;
+}
+
+.language-selection-line select {
+    background-color: var(--swap-form-background-color);
+    color: var(--theme-switch-button-text-color);
+    border: none;
+    border-radius: 5px;
+    margin-top: 10px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.language-selection-line select option {
+    background-color: var(--swap-form-background-color);
+    color: var(--theme-switch-button-text-color);
+    border: none;
+    cursor: pointer;
+}
+
+.language-selection-line select option:after {
+    background: var(--token-selector-table-hover-background-color);
+}

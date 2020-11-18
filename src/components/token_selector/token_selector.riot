@@ -2,8 +2,8 @@
 
     <div id="token-selector">
         <div class="wrapper">
-            <div class="close"><img src={ config.closeImage } onclick={ this.cleanUpAndClose } alt="close token selector"></div>
-            <input id="token-selector-input-text" type="text" placeholder="Search symbol or paste address" oninput={ filterTokenSearch }>
+            <div class="close"><img src={ config.closeImage } onclick={ this.cleanUpAndClose } alt={ this.i18next.t('token_selector.close.alt') } ></div>
+            <input id="token-selector-input-text" type="text" placeholder={ this.i18next.t('token_selector.input.message') } oninput={ filterTokenSearch }>
         </div>
         <div class="tokens">
             <table>

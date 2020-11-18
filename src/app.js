@@ -9,6 +9,7 @@ import { isDarkThemeSet, isLightThemeSet, initTheme } from './common/theme_manag
 export default (window.$ = window.jQuery = jquery);
 
 import Main from './components/main/main.riot'
+import i18next from "i18next";
 
 install(c => {
 
@@ -26,6 +27,8 @@ install(c => {
     c.isDarkThemeSet = isDarkThemeSet
     c.isLightThemeSet = isLightThemeSet
     c.initTheme = initTheme
+
+    c.i18next = i18next
 
 })
 

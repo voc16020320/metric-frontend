@@ -21,7 +21,7 @@
     <div class="section">
       <div class="direction-title">
         <div>To</div>
-        <div if= { isOutputDefined() && state.outputToken.balance > 0 }>Balance: { this.round(state.outputToken.balance, 4)}</div>
+        <div if= { isOutputDefined() && state.outputToken.balance > 0 }>{ this.i18next.t('wallet.balance', {balance: this.round(state.outputToken.balance, 4)}) }</div>
       </div>
       <div class="input-container">
         <label class="currency" onclick={ openOutputSelector }>{ outputSymbol() }</label>
@@ -264,11 +264,11 @@
       },
 
       inputSymbol() {
-        return this.state.inputToken ? this.state.inputToken.symbol : "SELECT TOKEN ˅"
+        return this.state.inputToken ? this.state.inputToken.symbol : this.i18next.t('order.select_token_caret')
       },
 
       outputSymbol() {
-        return this.state.outputToken ? this.state.outputToken.symbol : "SELECT TOKEN ˅"
+        return this.state.outputToken ? this.state.outputToken.symbol : this.i18next.t('order.select_token_caret')
       },
 
       async loadApproval() {
@@ -280,18 +280,18 @@
 
       buttonText() {
         if (!this.isWalletConnected()) {
-          return "CONNECT WALLET"
+          return this.i18next.t('wallet.connect_wallet').toUpperCase()
         }
 
         if (this.state.outputToken === null) {
-          return "SELECT TOKEN"
+          return this.i18next.t('order.select_token')
         }
 
         if (this.state.isApproved) {
-          return "SWAP"
+          return this.i18next.t('order.swap')
         }
 
-        return "APPROVE"
+        return this.i18next.t('submit.approve', {token: this.state.inputToken})
       },
 
       async buttonAction() {

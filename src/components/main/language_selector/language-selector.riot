@@ -1,0 +1,31 @@
+<language-selector>
+
+    <div class="language-section">
+        <div class="language-selection-line">{ this.i18next.t('language_selector.title') }</div>
+        <label class="language-selection-line">
+            <select onchange={ setLanguage }>
+                <option each={option in config.supported}
+                        selected={this.i18next.language === option.lng}
+                        value={option.lng}>
+                    { this.i18next.t(option.id) }
+                </option>
+            </select>
+        </label>
+    </div>
+
+    <script>
+        import './language_selector.css'
+
+        export default {
+            config: {
+                supported: [
+                    {lng: 'en-US', id: 'language_selector.option.english'},
+                    {lng: 'fr-FR', id: 'language_selector.option.french'}
+                ]
+            },
+            setLanguage(e) {
+                this.i18next.changeLanguage(e.target.value)
+            }
+        }
+    </script>
+</language-selector>

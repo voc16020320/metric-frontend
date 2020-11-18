@@ -7,14 +7,14 @@
         </div>
 
         <input type="checkbox" class="menu-btn" id="menu-btn" />
-        <label for="menu-btn" class="menu-icon" id="main-toggle"><span class="nav-icon"></span></label>
+        <label for="menu-btn" class="menu-icon" id="main-toggle"><span class="nav-icon"/></label>
 
         <ul class="menu-nav">
             <li>
                 <ul class="header-links" id="top-nav" if={ !isOrderBookFeatureEnabled() }>
-                    <li><a href="https://metric.exchange/">Swap</a></li>
-                    <li><a href="https://stake.metric.exchange/">Farm</a></li>
-                    <li><a href="https://medium.com/@BUILD_Finance/introducing-metric-community-owned-dex-aggregator-a1cff8b8100d" target="_blank">About</a></li>
+                    <li><a href="https://metric.exchange/">{ this.i18next.t('header.swap') }</a></li>
+                    <li><a href="https://stake.metric.exchange/">{ this.i18next.t('header.farm') }</a></li>
+                    <li><a href="https://medium.com/@BUILD_Finance/introducing-metric-community-owned-dex-aggregator-a1cff8b8100d" target="_blank">{ this.i18next.t('header.about') }</a></li>
                 </ul>
                 <hr/>
                 <ul class="header-settings">
@@ -26,7 +26,7 @@
     </header>
 
     <div class="notice">
-        Metric uses 0x relayer network and allows you to place Uniswap limit orders.
+        { this.i18next.t("notice.message") }
     </div>
 
     <div class="main-content">
@@ -47,11 +47,11 @@
 
     <div id="footer">
         <ul class="footer-content">
-            <li><a href="http://letsbuild.finance/" target="_blank">By BUILD Finance</a></li>
-            <li><a href="https://docs.letsbuild.finance/metric-exchange/" target="_blank">Documentation</a></li>
-            <li><a href="https://twitter.com/metricexchange" target="_blank">Twitter</a></li>
-            <li><a href="https://discord.gg/FN3sNSE" target="_blank">Discord</a></li>
-            <li><a href="https://build-finance.medium.com" target="_blank">Medium</a></li>
+            <li><a href="http://letsbuild.finance/" target="_blank">{ this.i18next.t('footer.build_by_finance') }</a></li>
+            <li><a href="https://docs.letsbuild.finance/metric-exchange/" target="_blank">{ this.i18next.t('footer.documentation') }</a></li>
+            <li><a href="https://twitter.com/metricexchange" target="_blank">{ this.i18next.t('footer.twitter') }</a></li>
+            <li><a href="https://discord.gg/FN3sNSE" target="_blank">{ this.i18next.t('footer.discord') }</a></li>
+            <li><a href="https://build-finance.medium.com" target="_blank">{ this.i18next.t('footer.medium') }</a></li>
         </ul>
     </div>
 
@@ -71,6 +71,7 @@
         } from "../../common/token_fetch";
         import {initWeb3} from "../../common/wallet_manager";
         import {Router, Route, setBase} from "@riotjs/route";
+        import {initLocalizations} from "../../common/localization/localize";
 
         export default {
             components: {
@@ -80,6 +81,9 @@
                 Blocky,
                 Swap,
                 OrderDashboard
+            },
+            async onBeforeMount() {
+                await initLocalizations()
             },
             async onMounted() {
                 document.title = "Metric Exchange"
@@ -98,6 +102,9 @@
                 setBase(`/`)
 
                 this.update()
+                this.i18next.on("languageChanged", (lng, ns) => {
+                    this.update()
+                })
             },
             isOrderBookFeatureEnabled() {
                 return true // window.location.host !== "metric.exchange"

@@ -1,12 +1,12 @@
 <theme-switch>
-    <div class="theme-switch-line">Dark mode</div>
+    <div class="theme-switch-line">{ this.i18next.t('theme_switch.dark_mode') }</div>
     <div class="theme-switch-line">
         <div class="theme-switch-line-group">
             <a href="#" class={ this.isDarkThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ toggleDarkTheme }>
-                On
+                { this.i18next.t('theme_switch.on') }
             </a>
             <a href="#" class={ this.isLightThemeSet() ? 'theme-switch-button active' : 'theme-switch-button' } onclick={ toggleLightTheme }>
-                Off
+                { this.i18next.t('theme_switch.off') }
             </a>
         </div>
     </div>

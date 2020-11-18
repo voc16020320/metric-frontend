@@ -1,0 +1,79 @@
+{
+    "translation" : {
+        "token_selector": {
+            "input": {
+                "message": "Tapez le symbol ou copiez l'adresse"
+            },
+            "close": {
+                "alt" : "fermer le selecteur do token"
+            }
+        },
+        "theme_switch": {
+            "dark_mode" : "Mode sombre",
+            "on" : "Activé",
+            "off": "Désactivé"
+        },
+        "header": {
+            "farm" : "Ferme",
+            "swap" : "Echange",
+            "about" : "A propos"
+        },
+        "notice": {
+            "message": "Metric utilise le réseau relai 0x et vous permet de placer des ordres limites sur Uniswap."
+        },
+        "footer": {
+            "build_by_finance" : "Par BUILD Finance",
+            "documentation" : "Documentation",
+            "twitter" : "Twitter",
+            "discord" : "Discord",
+            "medium" : "Medium"
+        },
+        "my_order_list" : {
+            "title" : "MES ORDRES",
+            "header" : {
+                "type" : "Type",
+                "amount_filled" : "Montant/Exécuté {{token.symbol}}",
+                "expires_in" : "Expire dans"
+            },
+            "order" : {
+                "cancel" : "Fermer"
+            }
+        },
+        "wallet" : {
+            "balance" : "Wallet: {{balance}}",
+            "connect_wallet" : "Connectez un wallet"
+        },
+        "order": {
+            "type" : {
+                "sell" : "Vente",
+                "buy" : "Achat"
+            },
+            "price": "Prix {{token.symbol}}",
+            "amount" : "Montant {{token.symbol}}",
+            "amount_simple" : "Montant",
+            "total" : "Totale {{token.symbol}}",
+            "fee" : "Frais",
+            "you_get" : "Vous recevez",
+            "swap_fee" : "Frais D'échange",
+            "swap" : "ECHANGER",
+            "select_token" : "CHOISISSEZ LE TOKEN",
+            "select_token_caret" : "CHOISISSEZ LE TOKEN ˅",
+            "metric_balance" : "Balance METRIC",
+            "no_fee" : "Pas de frais 🥳"
+        },
+        "submit" : {
+            "insufficient_balance" : "SOLDE INSUFFISANT",
+            "must_be_greater_than" : "DOIT ETRE >{{token.volume_limit}} {{token.symbol}}",
+            "approve": "APPROUVER {{token.symbol}}",
+            "approving" : "EN COURS D'APPROBATION {{token.symbol}}",
+            "place_order" : "PLACER l'ORDRE"
+        },
+        "language_selector" : {
+            "title" : "Langue",
+            "option" : {
+                "english" : "Anglais",
+                "french" : "Français"
+            }
+        }
+    }
+}

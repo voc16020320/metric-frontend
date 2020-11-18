@@ -2,15 +2,15 @@
 
     <table id="swap-price">
         <tr>
-            <td class="text-left">Price</td>
+            <td class="text-left">{ this.i18next.t('order.price') }</td>
             <td class="text-right">{ priceText() }</td>
         </tr>
         <tr>
-            <td class="text-left">Swap fee</td>
+            <td class="text-left">{ this.i18next.t('order.swap_fee') }</td>
             <td class="text-right">{ swapFeeText() }</td>
         </tr>
         <tr>
-            <td class="text-left">METRIC balance</td>
+            <td class="text-left">{ this.i18next.t('order.metric_balance') }</td>
             <td class="text-right">{ metricBalance() }</td>
         </tr>
     </table>
@@ -25,7 +25,7 @@
             swapFeeText() {
                 let fee = calculateMetricFee()
                 if (fee === 0) {
-                    return "No fees 🥳"
+                    return this.i18next.t('order.no_fee')
                 } else {
                     let feeAmount = this.round(this.props.amount * fee, 4)
                     return `${feeAmount} ${this.props.inputToken.symbol}`

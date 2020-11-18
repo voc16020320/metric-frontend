@@ -8,13 +8,13 @@
         </div>
 
         <div class="order-line order-buttons">
-            <div id="buy-button" class="buy-button button clickable" onclick={ setBuyOrderType }>Buy</div>
-            <div id="sell-button" class="sell-button button clickable" onclick={ setSellOrderType }>Sell</div>
+            <div id="buy-button" class="buy-button button clickable" onclick={ setBuyOrderType }>{ this.i18next.t('order.type.buy') }</div>
+            <div id="sell-button" class="sell-button button clickable" onclick={ setSellOrderType }>{ this.i18next.t('order.type.sell') }</div>
         </div>
 
         <div class="order-line order-param-values">
-            <div>Amount</div>
-            <div id="input-balance-amount" class="wallet-amount">Wallet: { formatWalletBalance(state.inputToken.balance) } </div>
+            <div>{ this.i18next.t('order.amount_simple') }</div>
+            <div id="input-balance-amount" class="wallet-amount">{ this.i18next.t('wallet.balance', {balance: formatWalletBalance(state.inputToken.balance)}) }</div>
         </div>
         <div class="order-line order-input">
             <input type="number" id="order-amount-input" onkeyup={ updateAmount } placeholder="0"/>
@@ -23,7 +23,7 @@
 
         <div class="order-line order-param-values">
             <div>Price</div>
-            <div class="wallet-amount">Wallet: { formatWalletBalance(state.outputToken.balance) } </div>
+            <div class="wallet-amount">{ this.i18next.t('wallet.balance', {balance: formatWalletBalance(state.outputToken.balance)}) }</div>
         </div>
         <div class="order-line order-input">
             <input id="order-price-input" type="number" onkeyup={ updatePrice } placeholder="0"/>
@@ -31,11 +31,11 @@
         </div>
 
         <div class="order-line order-info">
-            <div>Fee</div>
+            <div>{ this.i18next.t('order.fee') }</div>
             <label>{ formattedFeeAmount() } { state.outputToken.symbol }</label>
         </div>
         <div class="order-line order-info">
-            <div>You'll get</div>
+            <div>{ this.i18next.t('order.you_get') }</div>
             <label>{ formattedTotalAmount() } { state.outputToken.symbol }</label>
         </div>
 
@@ -318,23 +318,23 @@
                 }
             },
             setApprovalMessage(token) {
-                this.update({submitMessage: `APPROVING ${token.symbol}`})
+                this.update({submitMessage: this.i18next.t("submit.approving", {token: token})})
             },
             setOrderMessage() {
                 if (!this.isValidInputs()) {
-                    this.state.submitMessage = "PLACE ORDER"
+                    this.state.submitMessage = this.i18next.t("submit.place_order")
                 } else if (!this.isValidOrder()) {
-                    this.state.submitMessage = `MUST BE >${this.state.outputToken.volume_limit} ${this.state.outputToken.symbol}`
+                    this.state.submitMessage = this.i18next.t("submit.must_be_greater_than", {token: this.state.outputToken})
                 } else if (!this.isSufficientBalance()) {
-                    this.state.submitMessage = `INSUFFICIENT BALANCE`
+                    this.state.submitMessage = this.i18next.t("submit.insufficient_balance")
                 } else if(!this.maybeIsApproved()) {
                     if (this.isBuyOrder()) {
-                        this.state.submitMessage = `APPROVE ${this.state.outputToken.symbol}`
+                        this.state.submitMessage = this.i18next.t("submit.approve", {token: this.state.outputToken})
                     }else {
-                        this.state.submitMessage = `APPROVE ${this.state.inputToken.symbol}`
+                        this.state.submitMessage = this.i18next.t("submit.approve", {token: this.state.inputToken})
                     }
                 } else {
-                    this.state.submitMessage = "PLACE ORDER"
+                    this.state.submitMessage = this.i18next.t("submit.place_order")
                 }
             },
             refreshOrderMessage() {
