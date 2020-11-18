@@ -15,7 +15,7 @@
                 <td>{ ask.price }</td>
                 <td>{ ask.volumeMaker.toFixed(config.displayedDecimalPoints) }</td>
             </tr>
-            <tr id="orders-separator">
+            <tr id="orders-separator" class="order" onclick={ setOrderPrice }>
                 <td/>
                 <td>{ state.midMarketPrice }</td>
                 <td/>
