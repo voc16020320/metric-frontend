@@ -249,9 +249,8 @@
                 this.setApprovalMessage(token)
                 await ZeroXOrdersProxy.approveZeroXAllowance(
                     token.address,
-                    async (a, b) => {
+                    (a, b) => {
                         this.refreshOrderMessage()
-                        await this.sendOrder()
                     },
                     (e) => {
                         this.refreshOrderMessage()
