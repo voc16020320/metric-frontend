@@ -3,21 +3,21 @@
     <div id="order-form">
     
         <div class="order-line order-inputs">
-           <div class="token-selector button clickable-button" onclick={ openInputTokenSelector }>{ state.inputToken.symbol } ˅</div>
-           <div class="token-selector button clickable-button" onclick={ openOutputTokenSelector }>{ state.outputToken.symbol } ˅</div>
+           <div class="token-selector button clickable" onclick={ openInputTokenSelector }>{ state.inputToken.symbol } ˅</div>
+           <div class="token-selector button clickable" onclick={ openOutputTokenSelector }>{ state.outputToken.symbol } ˅</div>
         </div>
 
         <div class="order-line order-buttons">
-            <div id="buy-button" class="buy-button button clickable-button" onclick={ setBuyOrderType }>Buy</div>
-            <div id="sell-button" class="sell-button button clickable-button" onclick={ setSellOrderType }>Sell</div>
+            <div id="buy-button" class="buy-button button clickable" onclick={ setBuyOrderType }>Buy</div>
+            <div id="sell-button" class="sell-button button clickable" onclick={ setSellOrderType }>Sell</div>
         </div>
 
         <div class="order-line order-param-values">
             <div>Amount</div>
-            <div class="wallet-amount">Wallet: { formatWalletBalance(state.inputToken.balance) } </div>
+            <div id="input-balance-amount" class="wallet-amount">Wallet: { formatWalletBalance(state.inputToken.balance) } </div>
         </div>
         <div class="order-line order-input">
-            <input type="number" onkeyup={ updateAmount } placeholder="0"/>
+            <input type="number" id="order-amount-input" onkeyup={ updateAmount } placeholder="0"/>
             <label>{ state.inputToken.symbol }</label>
         </div>
 
@@ -190,11 +190,11 @@
                 let button = document.getElementById("place-order-button")
                 if (!this.isValidOrder() || !this.isSufficientBalance()) {
                     button.classList.remove("active-button")
-                    button.classList.remove("clickable-button")
+                    button.classList.remove("clickable")
                     button.onclick = null
                 } else if (this.isValidOrder() && !button.classList.contains("active-button")) {
                     button.classList.add("active-button")
-                    button.classList.add("clickable-button")
+                    button.classList.add("clickable")
                     button.onclick = this.checkApprovalAndSubmitOrder
                 }
                 this.refreshOrderMessage()
@@ -205,6 +205,7 @@
                 document.getElementById("buy-button").classList.remove("active-button")
                 document.getElementById("buy-button").classList.add("active-button")
                 this.updateSubmitButtonState()
+                this.removeInputAmountClickableState()
             },
             async setSellOrderType() {
                 this.state.orderType = this.config.sellOrderType
@@ -212,6 +213,22 @@
                 document.getElementById("buy-button").classList.remove("active-button")
                 document.getElementById("sell-button").classList.add("active-button")
                 this.updateSubmitButtonState()
+                this.addInputAmountClickableState()
+            },
+            addInputAmountClickableState() {
+                let element = document.getElementById("input-balance-amount")
+                element.classList.add("clickable")
+                element.onclick = this.setMaxInputAmount
+            },
+            removeInputAmountClickableState() {
+                let element = document.getElementById("input-balance-amount")
+                element.classList.remove("clickable")
+                element.onclick = null
+            },
+            setMaxInputAmount() {
+                this.update({ amount: this.state.inputToken.balance })
+                this.updateSubmitButtonState()
+                document.getElementById("order-amount-input").value = this.state.inputToken.balance
             },
             async checkApprovalAndSubmitOrder() {
                 if (await this.isApproved()) {
@@ -350,7 +367,7 @@
                     amount = this.inputAmount()
                 }
 
-                return balance > amount
+                return balance >= amount
             },
             formatWalletBalance(amount) {
                 return new BigNumber(amount).toFixed(3, BigNumber.ROUND_DOWN)
