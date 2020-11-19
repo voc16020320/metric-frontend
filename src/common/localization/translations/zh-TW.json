@@ -70,11 +70,7 @@
         },
         "language_selector" : {
             "title" : "選擇語言",
-            "option" : {
-                "zh_CN" : "简體中文",
-                "english" : "英語 English",
-                "french" : "法語 Français"
-            }
+            "language" : "简體中文"
         }
     }
 }
